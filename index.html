@@ -1,0 +1,1504 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Primo Star Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: inputs on the left, a sticky "season end" ledger on the right; on phones the ledger comes first and a star bar follows you down. */
+:root{
+  --bg:#F1EFF8; --surface:#FFFFFF; --sunk:#E8E4F4; --ink:#1D1A38; --muted:#5E5A7D; --line:#D9D4EC;
+  --star:#9A6A00; --star-soft:#F6E7B8; --leaf:#24704F; --leaf-soft:#D8F0E3; --warn:#A63E28; --warn-soft:#F9DED6;
+  --focus:#6B5BD6;
+  --display:"Cinzel", "Trajan Pro", Georgia, serif;
+  --body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#17152B; --surface:#211E3D; --sunk:#1B1934; --ink:#ECE8FF; --muted:#A29DC4; --line:#353060;
+  --star:#F2C14E; --star-soft:#3B3322; --leaf:#7FD1A8; --leaf-soft:#1E3A30; --warn:#FF9478; --warn-soft:#45231E; --focus:#A99BFF; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#17152B; --surface:#211E3D; --sunk:#1B1934; --ink:#ECE8FF; --muted:#A29DC4; --line:#353060;
+  --star:#F2C14E; --star-soft:#3B3322; --leaf:#7FD1A8; --leaf-soft:#1E3A30; --warn:#FF9478; --warn-soft:#45231E; --focus:#A99BFF; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font:400 15px/1.5 var(--body);font-variant-numeric:tabular-nums}
+.wrap{max-width:1200px;margin:0 auto;padding-inline:16px;padding-block:20px 96px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:20px}
+h1{font:700 clamp(26px,4vw,38px)/1.1 var(--display);letter-spacing:.02em;margin:0;text-wrap:balance}
+header p{margin:4px 0 0;color:var(--muted);max-width:60ch}
+.lang{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--surface)}
+.lang button{border:0;background:none;color:var(--muted);font:600 13px var(--body);padding:6px 14px;border-radius:999px;cursor:pointer}
+.lang button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,410px);gap:28px;align-items:start}
+.inputs{display:flex;flex-direction:column;gap:14px;min-width:0}
+.ledger{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);max-height:calc(100vh - 32px);overflow:auto;min-width:0;
+  background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}.ledger{position:static;max-height:none}}
+
+section.box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+section.box h2{font:600 17px/1.3 var(--body);margin:0 0 4px}
+.hint{color:var(--muted);font-size:13px;margin:2px 0 0}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:12px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);min-width:0}
+input,select{font:500 15px var(--body);color:var(--ink);background:var(--sunk);border:1px solid var(--line);border-radius:9px;padding:8px 10px;width:100%;min-width:0;font-variant-numeric:tabular-nums}
+input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+input::placeholder{color:var(--muted);opacity:.7}
+.check{display:flex;align-items:center;gap:8px;font-size:14px;margin-top:12px;color:var(--ink)}
+.check input{width:18px;height:18px;accent-color:var(--star)}
+.seg{display:inline-flex;gap:4px;background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:3px;margin-top:10px;flex-wrap:wrap}
+.seg button{border:0;background:none;font:600 13px var(--body);color:var(--muted);padding:6px 12px;border-radius:7px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(20,16,50,.15)}
+
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:8px;margin-top:10px}
+.slot{display:grid;grid-template-columns:auto 1fr auto 1fr;align-items:center;gap:6px;font-size:13px;color:var(--muted);background:var(--sunk);border-radius:10px;padding:6px 8px}
+.slot span:first-child{min-width:2.2em;color:var(--ink);font-weight:600}
+.slot input{padding:5px 6px;background:var(--surface);text-align:center}
+.slot .arrow{color:var(--muted)}
+.slot.one{grid-template-columns:auto 1fr}
+.big-summary{font:600 15px var(--body);color:var(--ink)}
+.goalgroup .sub{margin-top:14px}
+.bulk{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-top:12px}
+.bulk label.f{width:130px}
+.btn{font:600 13px var(--body);border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:9px;padding:8px 12px;cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.accent{margin-left:auto;background:var(--star);color:var(--surface);border-color:var(--star)}
+.plan{margin-top:12px;padding:14px;border-radius:12px;background:var(--sunk);font-size:14px;display:flex;flex-direction:column;gap:8px}
+.plan ul{margin:0;padding-left:18px}
+.plan p{margin:0}
+details{margin-top:10px}
+summary{cursor:pointer;color:var(--muted);font-size:13px;font-weight:600}
+
+.mat{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}
+.mat th{font-weight:600;color:var(--muted);font-size:12px;text-align:left;padding:4px 6px}
+.mat td{padding:4px 6px;border-top:1px solid var(--line)}
+.mat td:first-child{font-weight:600;white-space:nowrap}
+.mat tr.q td{border-top:0}
+.mat.nodaily th:nth-child(4),.mat.nodaily td:nth-child(4){display:none}
+.mat tr.q td:first-child{font-weight:500;padding-left:18px}
+.mat td:first-child .small{white-space:normal;font-weight:400}
+.mat input{padding:6px 8px;min-width:84px}
+.scroll{overflow-x:auto}
+
+/* Ledger */
+.lead{color:var(--muted);font-size:14px;margin:0}
+.hero{display:flex;align-items:center;gap:14px;margin:6px 0 2px}
+.hero svg{width:46px;height:46px;flex:none}
+.big{font:700 clamp(46px,7vw,64px)/1 var(--display);color:var(--star);letter-spacing:.01em}
+.unit{font:600 15px var(--body);color:var(--ink)}
+.parts{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0;padding:0;list-style:none}
+.parts li{background:var(--sunk);border-radius:999px;padding:3px 10px;font-size:13px;color:var(--muted)}
+.parts b{color:var(--ink);font-weight:600}
+.target{margin-top:14px;padding:12px;border-radius:12px;background:var(--sunk)}
+.bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin:8px 0 6px}
+.bar i{display:block;height:100%;background:var(--star);border-radius:99px;transition:width .2s ease-out}
+.chip{display:inline-block;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:600}
+.ok{background:var(--leaf-soft);color:var(--leaf)}
+.bad{background:var(--warn-soft);color:var(--warn)}
+.ledger h3{font:600 14px var(--body);margin:18px 0 6px;color:var(--ink)}
+.kv{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:14px;margin:0}
+.kv dt{color:var(--muted)} .kv dd{margin:0;text-align:right;font-weight:600}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{color:var(--muted);font-weight:600;text-align:right;padding:4px 4px;font-size:12px}
+.tbl th:first-child,.tbl td:first-child{text-align:left}
+.tbl td{padding:5px 4px;border-top:1px solid var(--line);text-align:right;vertical-align:top}
+.tbl tfoot td{font-weight:700;color:var(--ink)}
+.small{font-size:12px;color:var(--muted)}
+.warns{margin:14px 0 0;padding-left:18px;color:var(--warn);font-size:13px}
+.fieldwarn{display:block;background:var(--warn-soft);color:var(--warn);font-size:13px;border-radius:8px;padding:8px 10px;margin-top:6px}
+.example{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--star-soft);border-radius:12px;padding:10px 12px;font-size:14px}
+.example p{margin:0;flex:1 1 220px}
+
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:4;background:var(--bg);display:flex;gap:2px;overflow-x:auto;margin-bottom:16px;border-bottom:1px solid var(--line);scrollbar-width:none}
+.tabs button{flex:none;display:inline-flex;align-items:center;gap:6px;border:0;border-bottom:2px solid transparent;background:none;font:600 14px var(--body);color:var(--muted);padding:10px 12px;cursor:pointer}
+.tabs button:hover{color:var(--ink)}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--star)}
+.tabs .dot{width:7px;height:7px;border-radius:50%;background:var(--warn)}
+.missing{margin-top:12px;padding:12px;border-radius:12px;background:var(--warn-soft);font-size:14px}
+.missing p{margin:0}
+.missing ul{margin:6px 0;padding-left:18px}
+.link{border:0;background:none;padding:0;font:inherit;font-weight:600;color:var(--warn);text-decoration:underline;cursor:pointer}
+.ready{margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--leaf-soft);color:var(--leaf);font-size:14px}
+.plan h4{font:600 14px var(--body);margin:4px 0 0}
+@media (max-width:900px){.grid:not([data-tab="goal"]) .ledger{display:none}}
+.step{margin:0 0 2px;font-size:12px;font-weight:600;color:var(--star);letter-spacing:.04em}
+.intro{margin:4px 0 0;font-size:14px;color:var(--ink);max-width:65ch}
+.sub{font:600 14px var(--body);margin:18px 0 0;padding-top:14px;border-top:1px solid var(--line)}
+small.help{font-size:12px;line-height:1.4;color:var(--muted)}
+/* Fields with an explanation: 2 columns on PC, 1 on phones; label / box / help share rows so the boxes line up */
+.row:has(small.help){grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:16px 20px;align-items:start}
+.row:has(small.help) label.f{display:grid;grid-row:span 3;grid-template-rows:subgrid;gap:6px}
+.row:has(small.help) label.f>span{align-self:end;color:var(--ink);font-weight:600}
+.cols{margin:10px 0 0;padding-left:18px;font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:2px}
+.cols b{color:var(--ink)}
+.ref{margin:10px 0 0;max-width:420px}
+.ref img{display:block;width:100%;height:auto;border-radius:10px;border:1px solid var(--line)}
+.ref figcaption{font-size:12px;color:var(--muted);margin-top:4px}
+.progress{margin:8px 0 0;font-size:13px;font-weight:600;color:var(--muted)}
+.next{display:flex;flex-direction:column;gap:10px}
+.nextbtns{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end}
+#clearTabBtn{margin-right:auto}
+.btn.danger{color:var(--warn)}
+.btn.danger.armed{background:var(--warn-soft);border-color:var(--warn)}
+.clearrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:10px}
+.stepstat{margin:0;padding:10px 12px;border-radius:12px;font-size:14px}
+.stepstat.ok{background:var(--leaf-soft);color:var(--leaf)}
+.stepstat.bad{background:var(--warn-soft);color:var(--warn)}
+.verdict{padding:12px 14px;border-radius:12px;font-size:15px}
+/* goal box + Astral Pact milestone list side by side */
+.row:has(small.help) label.f>span.goalin{display:flex;gap:8px;align-self:stretch;font-weight:400}
+.goalin input{flex:0 0 6.5em}
+.goalin select{flex:1 1 0;min-width:0;text-overflow:ellipsis}
+.pactnote{margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--star-soft);font-size:14px;display:flex;flex-direction:column;gap:8px}
+.pactnote p{margin:0}
+.pactnote .btns{display:flex;flex-wrap:wrap;gap:8px}
+.pactline{margin:0;font-size:14px;padding:8px 10px;border-radius:8px;background:var(--star-soft)}
+.pacttbl{margin-top:8px}
+.pacttbl td:first-child{font-weight:600;white-space:nowrap}
+.pacttbl td,.pacttbl th{text-align:left!important}
+.pacttbl tr.got td{color:var(--leaf)}
+.pacttbl tr.nx td{font-weight:700;background:var(--star-soft)}
+h3.sc{font:600 17px var(--body);margin:6px 0 2px;color:var(--ink)}
+.scnote{font-size:13px;color:var(--muted);background:var(--sunk);border-radius:8px;padding:8px 10px;margin:6px 0 8px}
+.alt{margin:0;font-size:15px}.alt b{font:700 22px var(--display);color:var(--star)}
+.verdict b{display:block;font-size:17px;margin-bottom:2px}
+.plan .tbl{background:var(--surface);border-radius:8px}
+.plan .tbl td,.plan .tbl th{padding:6px 8px}
+.todo{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+@media (max-width:520px){
+  section.box:has(.plan){padding:12px}
+  .plan{padding:10px}
+  .plan .tbl{table-layout:fixed}
+  .plan .tbl th,.plan .tbl td{text-align:left;padding:5px 4px;overflow-wrap:break-word;hyphens:auto}
+  .plan .tbl{font-size:12px}
+}
+.sbar{display:none}
+@media (max-width:900px){
+  .sbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:5;align-items:center;justify-content:space-between;gap:10px;
+    background:var(--surface);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+  .sbar b{font:700 22px var(--display);color:var(--star)}
+}
+.slots.compact{grid-template-columns:repeat(auto-fill,minmax(132px,1fr))}
+.elhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:14px 0 -2px}
+h4.el{margin:0;font-size:13px;color:var(--ink)}
+.elall{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.elall input{width:4.5em;padding:5px 6px;text-align:center}
+.slots.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.slots.named .slot{grid-template-columns:5.6em minmax(0,1fr)} /* same label width so the boxes line up */
+.slots.three{display:flex;flex-wrap:wrap;justify-content:center}
+.slots.three>.slot{flex:0 0 calc((100% - 16px)/3);min-width:0}
+.slots.three{row-gap:0;margin-top:2px}.slots.three>.slot{margin-top:8px}
+.slots.three .brk{flex-basis:100%} /* weapons on one row, armor on the next, like the game */
+/* columns follow the card's own width (the PC layout can make the card narrow too) */
+#groups .box,#goalGroups .goalgroup{container-type:inline-size}
+@container (max-width:600px){.slots.named.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container (max-width:460px){.slots.three>.slot{flex-basis:calc((100% - 8px)/2)}}
+@container (max-width:400px){.slots.named .slot{grid-template-columns:minmax(0,1fr);text-align:center}}
+@media (max-width:520px){
+  input,select{font-size:16px} /* below 16px iOS Safari zooms in on focus */
+  .slot input{padding:5px 2px}
+  .compact .slot{gap:4px;padding:6px}
+  .compact .slot span:first-child{min-width:1.6em}
+  .slots.four{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .mat{table-layout:fixed}
+  .mat th:first-child,.mat td:first-child{width:24%;white-space:normal;font-size:13px}
+  #matTable th:nth-child(2){width:31%} #matTable th:nth-child(3){width:25%} /* "Have" holds the biggest numbers */
+  #matTable.nodaily th:first-child{width:38%} #matTable.nodaily th:nth-child(2){width:34%} #matTable.nodaily th:nth-child(3){width:28%}
+  .mat td{padding:4px 3px}
+  .mat input{min-width:0;padding:6px 3px;text-align:center}
+  .lang button{padding:10px 16px}
+}
+footer{margin-top:28px;color:var(--muted);font-size:13px;max-width:75ch}
+footer a{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1 data-i18n="name">Primo Star Planner</h1>
+      <p data-i18n="subtitle"></p>
+    </div>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" id="lang-es" data-lang="es">Español</button>
+      <button type="button" id="lang-en" data-lang="en">English</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+  <div class="grid" data-tab-host>
+    <div class="inputs">
+      <div class="example" id="exampleBox" data-tab="goal" hidden>
+        <p id="exampleText"></p>
+        <button type="button" class="btn primary" id="startBtn" data-i18n="start"></button>
+        <button type="button" class="btn" id="exampleBtn" data-i18n="see_example"></button>
+        <button type="button" class="btn" id="clearBtn" data-i18n="clear"></button>
+      </div>
+
+      <section class="box" data-tab="goal">
+        <h2 data-i18n="sec_goal"></h2>
+        <p class="intro" data-i18n="i_goal"></p>
+        <p class="progress" id="progressLine"></p>
+        <div class="row">
+          <label class="f"><span data-i18n="primo_have"></span><input id="primoHave" class="num" type="text" inputmode="numeric"><small class="help" data-i18n="primo_have_hint"></small><small class="fieldwarn" id="haveWarn" hidden></small></label>
+          <label class="f"><span data-i18n="primo_target"></span><span class="goalin"><input id="primoTarget" class="num" type="text" inputmode="numeric"><select class="pactPick"></select></span><small class="help" data-i18n="h_target"></small></label>
+        </div>
+        <div class="pactnote" id="pactNote" hidden></div>
+        <details id="det-pact"><summary data-i18n="pact_h"></summary><div id="pactTable"></div></details>
+        <div class="missing" id="missingBox" hidden></div>
+        <p class="ready" id="readyBox" data-i18n="ready" hidden></p>
+        <div class="bulk"><button type="button" class="btn primary" id="suggestBtn" data-i18n="suggest_btn"></button><button type="button" class="btn accent" id="fillBtn" hidden></button></div>
+        <p class="hint" data-i18n="suggest_hint"></p>
+        <div class="clearrow"><button type="button" class="btn danger" id="clearAllBtn" data-i18n="clear_all"></button><small class="help" data-i18n="clear_all_hint"></small></div>
+        <div class="plan" id="planBox" hidden></div>
+      </section>
+
+      <section class="box" data-tab="time">
+        <p class="step" data-step="time"></p>
+        <h2 data-i18n="sec_time"></h2>
+        <p class="intro" data-i18n="i_time"></p>
+        <h3 class="sub" data-i18n="sub_end"></h3>
+        <div class="seg" role="group">
+          <button type="button" id="modeRemaining" data-mode="remaining" data-i18n="mode_remaining"></button>
+          <button type="button" id="modeExact" data-mode="exact" data-i18n="mode_exact"></button>
+          <button type="button" id="modeStart" data-mode="start" data-i18n="mode_start"></button>
+        </div>
+        <p class="hint" data-i18n="mode_one"></p>
+        <div class="row" id="remainingBox">
+          <label class="f"><span data-i18n="days"></span><input id="remDays" type="number" min="0" step="1" inputmode="numeric"></label>
+          <label class="f"><span data-i18n="hours"></span><input id="remHours" type="number" min="0" max="23" step="1" inputmode="numeric"></label>
+        </div>
+        <div class="row" id="exactBox" hidden>
+          <label class="f"><span data-i18n="end_exact"></span><input id="endExact" type="datetime-local"></label>
+        </div>
+        <div class="row" id="startBox" hidden>
+          <label class="f"><span data-i18n="start_date"></span><input id="seasonStart" type="date"><small class="help" data-i18n="h_start_date"></small></label>
+        </div>
+        <p class="hint" id="modeHint"></p>
+        <h3 class="sub" data-i18n="sub_account"></h3>
+        <div class="row">
+          <label class="f"><span data-i18n="season"></span><select id="season"></select><small class="help" data-i18n="h_season"></small></label>
+          <label class="f"><span data-i18n="reset_time"></span><input id="resetTime" type="time" value="09:00"><small class="help" data-i18n="h_reset"></small></label>
+          <label class="f"><span data-i18n="boost"></span><input id="boost" type="number" min="0" step="1" value="2"><small class="help" data-i18n="h_boost"></small></label>
+          <label class="f"><span data-i18n="crystals"></span><input id="crystals" type="number" min="0" step="1" inputmode="numeric"><small class="help" data-i18n="crystals_hint"></small></label>
+        </div>
+        <h3 class="sub" data-i18n="res_head"></h3>
+        <p class="hint" data-i18n="res_explain"></p>
+        <label class="check"><input type="checkbox" id="saveExp"><span data-i18n="save_exp"></span></label>
+        <figure class="ref"><img src="data:image/jpeg;base64,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" alt="" width="640" height="129" data-i18n-alt="ref_alt"><figcaption data-i18n="ref_cap"></figcaption></figure>
+        <p class="hint" id="saveHint" hidden></p>
+        <div class="row" id="saveBox" hidden>
+          <label class="f"><span data-i18n="save_hours"></span><input id="saveHours" type="number" min="0" max="36" step="1" value="36"><small class="help" data-i18n="h_save_hours"></small></label>
+        </div>
+      </section>
+
+      <section class="box" data-tab="char">
+        <p class="step" data-step="char"></p>
+        <h2 data-i18n="sec_char"></h2>
+        <p class="intro" data-i18n="i_char"></p>
+        <div class="row">
+          <label class="f"><span data-i18n="char_lv"></span><input id="charLv" type="number" min="1" step="1" inputmode="numeric"><small class="help" data-i18n="h_char_lv"></small></label>
+          <label class="f"><span data-i18n="char_xp"></span><input id="charXp" class="num" type="text" inputmode="numeric" autocomplete="off"><small class="help" data-i18n="h_char_xp"></small></label>
+          <label class="f"><span data-i18n="xp_hr"></span><input id="xpHr" class="num" type="text" inputmode="numeric" autocomplete="off"><small class="help" data-i18n="h_xp_hr"></small></label>
+          <label class="f"><span data-i18n="bed_xp"></span><input id="bedXp" class="num" type="text" inputmode="numeric" autocomplete="off"><small class="help" data-i18n="h_bed_xp"></small></label>
+        </div>
+        <p class="hint" id="charHint"></p>
+      </section>
+
+      <div class="inputs" data-tab="levels">
+        <section class="box">
+        <p class="step" data-step="levels"></p>
+        <h2 data-i18n="tab_levels"></h2>
+        <p class="intro" data-i18n="i_levels"></p>
+        </section>
+        <div id="groups" class="inputs"></div>
+        <section class="box">
+          <details id="det-goals">
+            <summary class="big-summary" data-i18n="try_goals"></summary>
+            <p class="hint" data-i18n="try_goals_hint"></p>
+            <div id="goalGroups"></div>
+          </details>
+        </section>
+      </div>
+
+      <section class="box" data-tab="mat">
+        <p class="step" data-step="mat"></p>
+        <h2 data-i18n="sec_mat"></h2>
+        <p class="intro" data-i18n="i_mat"></p>
+        <ul class="cols">
+          <li data-i18n="col_have"></li>
+          <li data-i18n="col_hour"></li>
+          <li data-i18n="col_day" id="colDayLi"></li>
+        </ul>
+        <label class="check"><input type="checkbox" id="useDaily"><span data-i18n="use_daily"></span></label>
+        <div class="scroll"><table class="mat" id="matTable"></table></div>
+        <p class="hint" data-i18n="mat_hint"></p>
+        <div class="row">
+          <label class="f"><span data-i18n="exp_per_treat"></span><input id="expTreat" class="num" type="text" inputmode="numeric" value="50"><small class="help" data-i18n="h_exp_treat"></small></label>
+        </div>
+      </section>
+
+      <section class="box" data-tab="realm">
+        <p class="step" data-step="realm"></p>
+        <h2 data-i18n="sec_realm"></h2>
+        <p class="intro" data-i18n="i_realm"></p>
+        <div class="row">
+          <label class="f"><span data-i18n="realm_rank"></span><select id="realmRank"></select><small class="help" data-i18n="h_rank"></small></label>
+        </div>
+        <ul class="cols">
+          <li data-i18n="col_r_have"></li>
+          <li data-i18n="col_r_quests"></li>
+          <li data-i18n="col_r_buys"></li>
+          <li data-i18n="col_r_gives"></li>
+        </ul>
+        <div class="scroll"><table class="mat" id="realmTable"></table></div>
+      </section>
+
+      <section class="box" data-tab="paid">
+        <p class="step" data-step="paid"></p>
+        <h2 data-i18n="sec_paid"></h2>
+        <p class="intro" data-i18n="i_paid"></p>
+        <div class="row">
+          <label class="f"><span data-i18n="pass"></span><select id="pass"></select><small class="help" data-i18n="h_pass"></small></label>
+        </div>
+        <p class="hint" id="passHint"></p>
+        <h3 class="sub" data-i18n="sub_packs"></h3>
+        <div class="row">
+          <label class="f"><span data-i18n="week_day"></span><select id="weekDay"></select><small class="help" data-i18n="week_day_hint"></small></label>
+        </div>
+        <div class="scroll"><table class="mat" id="packTable"></table></div>
+        <p class="hint" data-i18n="pack_hint"></p>
+      </section>
+
+      <div class="next" id="nextBar" hidden>
+        <p class="stepstat" id="stepStat"></p>
+        <div class="nextbtns">
+          <button type="button" class="btn danger" id="clearTabBtn" data-i18n="clear_tab"></button>
+          <button type="button" class="btn" id="toPrev"></button>
+          <button type="button" class="btn" id="toNext"></button>
+          <button type="button" class="btn primary" id="toPlan" data-i18n="suggest_btn"></button>
+        </div>
+      </div>
+    </div>
+
+    <aside class="ledger" id="ledger" aria-live="polite"></aside>
+  </div>
+
+  <footer id="footer"></footer>
+</div>
+<div class="sbar" aria-hidden="true"><span data-i18n="sbar"></span><b id="sbarStars">0</b></div>
+
+<script>
+const XPSRC={char:{"1":"izpi.j1lv.juw5.knw6.lozo.mlcv.ni35.oc9p.p6mt.q16g.qz39.rxx9.swke.tvkl.uuxw.vuob.wurs.xv8d.yw21.zx8s.112w1.1281s.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4.13ai4","2":"3ry55.41kpv.4dinh.4p95g.50pfl.5bspk.5oes9.5zok8.6b072.6o2zg.6psa6.6qxxm.6s2sw.6t7o6.6ucjg.6vheq.6wma0.6xr5a.6ybkx.6zgg7.70lbh.715wd.71qc1.72aro.73fmz.74kia.769t8.78jju.79of5.7atag.7by5r.7dnbz.7es7a.7fx2k.7fx2k.7ghi7.7hmdh.7ir8r.7jboe.7kgjo.7lley.7mq5h.7nv0q.7pkbm.7r9mj.7sehs.7tjd1.7uo8b.7v8ny.7wdj7.7xieh.7ymix.7z6yi.7zre3.80btn.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98.80w98","3":"qruyr.t15oe.vbhr4.xkrv0.zuuf8.123c1p.14hcwp.16tsty.199stt.1bqurg.1bzjue.1c8bfp.1ch0j4.1cmt9e.1cppmj.1cyepy.1d73tc.1dcwjm.1dlln1.1duaqg.1e03gq.1e8qaq.1eej0r.1ekbqr.1et0ts.1eytjs.1f4m9t.1fdbct.1fj42u.1fowsu.1frt5v.1fxsl9.1g3lc0.1gcag5.1pmxp8.1vy8n7.1w4qiz.1w7zgw.1wehcn.1wkz8g.1wo86d.1x0rbo.1x795p.1xgzwn.1xk8tn.1xx8hm.1y3qbl.1y6z8m.1ygpzk.1yn7tj.1yqgqk.1yx5u4.1z0erj.1za5jm.1zgned.1zjwbr.1zqe6h.1zww19.203dvz.1r1sb2.1ri0xx.1roptn.1rryrd.1rygmu.1s4yib.1shy98.1sl76z.1t1fvn.1t7xr3.1tb6ou.1thoka.1tnyuc.1tr7ro.1txpme.1u47h4.1uh76j.1ukg3w.1unp19.1uu6vz.1uxftb.1v3xo1.1vaeeu.1vgw9g.1vne42.1vqn1d.1vx4vz.1vx4vz.1w0dta.1w0dta.1w3mql.1w63m5.1w6vnw.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4.1w9ci4","4":"cbdb8b.datii5.eanvst.faqlfj.gb1nea.hbl1p3.id37x0.jewikz.kfeias.lgwnzr.ljgh92.lla40n.lm4py1.lntxst.lpj5nl.lr8did.lsxld4.lumt7w.lvhf5a.lx6n02.lyvuuu.m0mkda.m2bsc8.m410b5.m5q8a2.m7fg8z.m94o7w.matw6u.mcj45r.me8c4o.mfxk3l.mhlylv.mjb6ik.ml0ef9.mmpmby.mnk8ab.mp9g70.mqyo3o.msnw0d.mud3x2.mw2btr.mwvv73.myl30x.n0aaur.n14wro.n2u4lh.n4jcfb.n68k95.n7xs2y.n9mzws.nahltp.nc93ln.ndyblg.nfnjl9.nhcrl2.nj1zkv.nkr7kn.nlltkk.nnb1kd.np09k6.nqphjz.nrjsps.nt90ot.nuy8nu.nwngmv.nycolw.o01wkx.o1r4jy.o2lqjg.o4ayih.o606hi.o7lgep.o9ao3r.oazvss.ocp3hu.odjpcc.of8x1e.ogy4qf.oincfh.okck4i.om1rtj.onxocb.opmwhz.orc4nn.os6qqh.otvyw5.ovl71t.oxaf7g.oyznd4.ozu9fy.p1jhlm.p2s7do.p4hef0.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb.p66lgb","5":"2icv3bf.2pj6y9j.2wqtjjw.33zqv6g.3b2lxl6.3ihlfa5.3pyb83e.3xgrc0x.450xr2q.4cdblsf.4cnxx3a.4cxguy6.4cxguy6.4cxguy6.4d6zst2.4dzkmdr.4e4c3b7.4e4c3b7.4edv163.4edv163.4emycpe.4emycpe.4emycpe.4emycpe.4ewh9mh.4ewh9mh.4ewh9mh.4ewh9mh.4f18q30.4f18q30.4facibn.4gcg2df.4gh7idn.4glyydv.4glyydv.4gvhuea.4h09aei.4hejmf6.4hejmf6.4hejmf6.4hu1unw.4i8cakb.4i8cakb.4ihv95y.4iw5p2e.4jag4yt.4joqkv9.4khbgo4.4km2xyy.4kquf9r.4kue0f3.4kz5gg6.4l3wwh9.4l3wwh9.4l8ocic.4l8ocic.4l8ocic.4l8ocic.4l8ocic.4l8ocic.4l9exgt.4l9exgt.4l9exgt.4m1zq93.4m1zq93.4mbinui.4ml1lfx.4nidv0w.4nn5btm.4o1fq7r.4o699la.4o699la.4ob0qg3.4ofs7ax.4okjo5r.4ou2lve.4oyu2q8.4oyu2q8.4p3ljl2.4p3ljl2.4pcv0wo.4pmdy35.4q5fsg4.4q5fsg4.4q5fsg4.4q5fsg4.4q5fsg4.4q5fsg4.4q5fsg4.4qa791c.4qrn2p9.4r5xbly.4raoqkv.4tce3yd.4ve3hbu.4xfsupc.4zhi82t.51j7lgb.53kwytt.55mmc7a.57obpks.59q12y9.5brqgbr.5dtftp9.5fv572q.5hwukg8.5jyjxtp.5m09b77.5o1yoko.5q3o1y6.5s5dfbo.5u72sp5.5w8s62n.5yahjg4.60c6wtm.62dwa74.64flnkl.66hb0y3.68j0ebk.6akprp2.6cmf52k.6eo4ig1.6gptvtj.6irj970.6kt8mki.6muxzy0.6owndbh.6qycqoz.6t0242g.6v1rhfy.6x3gutg.6z5686x.716vlkf.738kyxw.75aacbe.77bzpov.79dp32d.7bfegfv.7dh3ttc.7fit76u.7hkikkb.7jm7xxt.7lnxbbb.7npmoos.7prc22a.7rt1ffr.7tuqst9.7vwg66r.7xy5jk8.7zzuwxq"},fant:{"1":"k4g.kiw.kxc.lbs.lqi.m4y.mje.mxu.nca.nqq.o5g.ojw.oyc.pcs.pr8.q5o.qke.qyu.rda.rrq.s66.skm.szc.tds.ts8.u6o.ul4.uzk.ve0.vsq.w76.wlm.x02.xei.xsy.y7o.ym4.z0k.zf0.ztg.107w.10mm.1112.11fi.11ty.128e.12mu.131k.13g0.13ug.148w.14nc.151s.15g8.15uy.169e.16nu.172a.17gq.17v6.189w.18oc.192s.19h8.19vo.1aa4.1aou.1b3a.1bhq.1bw6.1cam.1cp2.1d3s.1di8.1dwo.1eb4.1epk.1f40.1fig.1fx6.1gbm.1gq2.1h4i.1hiy.1hxe.1ic4.1iqk.1j50.1jjg.1jxw.1kcc.1kr2.1l5i.1ljy.1lye.1mcu.1mra.1n60.1nkg.1nyw.1odc.1ors.1p68.1pko.1pze.1qdu.1qsa.1r6q.1rl6.1rzm.1sec.1sss.1t78.1tlo.1u04.1uek.1uta.1v7q.1vm6.1w0m.1wf2.1wti.1x88.1xmo.1y14.1yfk.1yu0.1z8g.1zmw.201m.20g2.20ui.218y.21ne.221u.22gk.22v0.239g.23nw.242c.24gs.24vi.259y.25oe.262u.26ha.26vq.27ag.27ow.283c","2":"189m.195k.1a18.1ax6.1bt4.1cp2.1dkq.1ego.1fcm.1g8k.1h48.1i06.1iw4.1js2.1knq.1ljo.1mfm.1nbk.1o78.1p36.1pz4.1qv2.1rqq.1smo.1tim.1uek.1va8.1w66.1x24.1xxs.1ytq.1zpo.20lm.21ha.22d8.2396.2454.250s.25wq.26so.27om.28ka.29g8.2ac6.2b84.2c3s.2czq.2dvo.2erm.2fna.2gj8.2hf6.2iau.2j6s.2k2q.2kyo.2luc.2mqa.2nm8.2oi6.2pdu.2q9s.2r5q.2s1o.2sxc.2tta.2up8.2vl6.2wgu.2xcs.2y8q.2z4o.300c.30wa.31s8.32o6.33ju.34fs.35bq.367e.373c.37za.38v8.39qw.3amu.3bis.3ceq.3dae.3e6c.3f2a.3fy8.3gtw.3hpu.3ils.3jhq.3kde.3l9c.3m5a.3n18.3nww.3osu.3pos.3qkg.3rge.3scc.3t8a.3u3y.3uzw.3vvu.3wrs.3xng.3yje.3zfc.40ba.416y.422w.42yu.43us.44qg.45me.46ic.47ea.489y.495w.4a1u.4axs.4btg.4cpe.4dlc.4eh0.4fcy.4g8w.4h4u.4i0i.4iwg.4jse.4koc.4lk0.4mfy.4nbw.4o7u.4p3i.4pzg.4qve.4rrc.4sn0.4tiy.4uew.4vau.4w6i","3":"3stk.3vk6.3yai.4114.43rq.46i2.498o.4bz0.4epm.4hg8.4k6k.4mx6.4pns.4se4.4v4q.4xvc.50lo.53ca.562w.58t8.5bju.5ea6.5h0s.5jre.5mhq.5p8c.5ryy.5upa.5xfw.606i.62wu.65ng.68ds.6b4e.6dv0.6glc.6jby.6m2k.6osw.6rji.6ua4.6x0g.6zr2.72ho.7580.77ym.7aoy.7dfk.7g66.7iwi.7ln4.7n0a.7odq.7pqw.7r42.7shi.7tuo.7v7u.7wla.7xyg.7zbm.80p2.8228.83fe.84sk.8660.87j6.88wc.8a9s.8bmy.8d04.8edk.8fqq.8h3w.8ihc.8jui.8l7o.8ml4.8nya.8pbg.8qow.8s22.8tf8.8uso.8w5u.8xj0.8ywg.909m.91ms.92zy.94de.95qk.973q.98h6.99uc.9b7i.9cky.9dy4.9fba.9goq.9i1w.9jf2.9ksi.9m5o.9niu.9owa.9q9g.9rmm.9t02.9ud8.9vqe.9x3u.9yh0.9zu6.a17c.a2ks.a3xy.a5b4.a6ok.a81q.a9ew.aasc.ac5i.adio.aew4.ag9a.ahmg.aizw.akd2.alq8.an3o.aogu.apu0.ar7g.askm.atxs.avb8.awoe.ay1k.azeq.b0s6.b25c.b3ii.b4vy.b694.b7ma.b8zq.bacw.bbq2.bd3i.bego.bftu.bh7a.bikg.bjxm.blb2.bmo8.bo1e.bpeu.bqs0.bs56.btim.buvs.bw8y.bxm4.byzk.c0cq.c1pw.c33c.c4gi.c5to.c774.c8ka.c9xg.cbaw.cco2.ce18.cfeo.cgru.ci50","4":"6oz0.6tsm.6yly.73fk.788w.7d2i.7hw4.7mpg.7rj2.7wce.8160.85zm.8asy.8fmk.8kfw.8p9i.8u34.8ywg.93q2.98je.9dd0.9i6m.9mzy.9rtk.9wmw.a1gi.a6a4.ab3g.afx2.akqe.apk0.audm.az6y.b40k.b8tw.bdni.bih4.bnag.bs42.bwxe.c1r0.c6km.cbdy.cg7k.cl0w.cpui.cuo4.czhg.d4b2.d94e.ddy0.dgco.dirm.dl6a.dnky.dpzw.dsek.dut8.dx7w.dzmu.e21i.e4g6.e6v4.e99s.ebog.ee3e.egi2.eiwq.elbe.enqc.eq50.esjo.euym.exda.ezry.f26w.f4lk.f708.f9ew.fbtu.fe8i.fgn6.fj24.flgs.fnvg.fqa4.fsp2.fv3q.fxie.fzxc.g2c0.g4qo.g75m.g9ka.gbyy.gedm.ggsk.gj78.gllw.go0u.gqfi.gsu6.gv94.gxns.h02g.h2h4.h4w2.h7aq.h9pe.hc4c.hej0.hgxo.hjcm.hlra.ho5y.hqkm.hszk.hve8.hxsw.i07u.i2mi.i516.i7g4.i9us.ic9g.ieo4.ih32.ijhq.ilwe.iobc.iqq0.it4o.ivjm.ixya.j0cy.j2rm.j56k.j7l8.j9zw.jceu.jeti.jh86.jjn4.jm1s.jogg.jqv4.jta2.jvoq.jy3e.k0ic.k7qi.kck0.khdi.km70.kr0i.kvu0.l0ni.l5h0.laai.lf40.ljxi.lor0.ltki.lye0.m37i.m810.mcui.mho0.mmhi.mrb0.mw4i.n0y0.n5ri.nal0.nfei.nk80.np1i.ntv0.nyoi.o3i0","5":"bego.bmo8.buvs.c33c.cbaw.cjig.crq0.czxa.d84u.dgce.dojy.dwri.e4z2.ed6m.ele6.etlq.f1ta.fa0u.fi8e.fqfo.fyn8.g6us.gf2c.gn9w.gvhg.h3p0.hbwk.hk44.hsbo.i0j8.i8qs.igyc.ip5m.ixd6.j5kq.jdsa.jlzu.ju7e.k2ey.kami.kiu2.kr1m.kz96.l7gq.lfo0.lnvk.lw34.m4ao.mci8.mkps.msxc.mx14.n14w.n58o.n9cg.ndg8.nhk0.nlns.nprk.ntvc.nxz4.o22w.o66o.oaa6.oedy.oihq.omli.oqpa.out2.oywu.p30m.p74e.pb86.pfby.pjfq.pnji.prna.pvr2.pzuu.q3ym.q82e.qc66.qg9y.qkdq.qohi.qsla.qwp2.r0su.r4wc.r904.rd3w.rh7o.rlbg.rpf8.rtj0.rxms.s1qk.s5uc.s9y4.se1w.si5o.sm9g.sqd8.suh0.syks.t2ok.t6sc.taw4.tezw.tj3o.tn7g.trb8.tvf0.tzii.u3ma.u7q2.ubtu.ufxm.uk1e.uo56.us8y.uwcq.v0gi.v4ka.v8o2.vcru.vgvm.vkze.vp36.vt6y.vxaq.w1ei.w5ia.w9m2.wdpu.whtm.wlxe.wq16.wu4o.wy8g.x2c8.x6g0.xajs.xenk.xirc.xmv4.xqyw.xv2o.xz6g.y3a8.y7e0.ybhs.yflk.yjpc.ynt4.yrww.yw0o.z04g.z488.z8c0.zcfs.zgjk.zknc.zoqu.zsum.zwye.10126.1055y.1099q.10ddi.10hha.10ll2.10pou.10tsm.10xwe.11206.1163y.11a7q.11ebi.11ifa"}};
+// Season rules from 0xNobody's planner (read from the game client). S1 cross-checked against Avalon's calculator.
+const RULES={
+ 1:{floor:100,relicFloor:10,relicBase:10,fixed:10,perStar:100,charW:100,gearW:38,relicW:57,skillW:13,fantW:14,gearBase:9280,gearRate:92.8,forgeStone:450,skillBase:6025,skillRate:60.25,relicBaseCost:3200,relicRate:320,relicTier:"blue"},
+ 2:{floor:130,relicFloor:13,relicBase:13,fixed:45,perStar:27,charW:100,gearW:18,relicW:33,skillW:7,fantW:8,gearBase:16630,gearRate:166.3,forgeStone:510,skillBase:12025,skillRate:120.25,relicBaseCost:1350,relicRate:135,relicTier:"purple"},
+ 3:{floor:160,relicFloor:17,relicBase:16,fixed:65,perStar:13,charW:100,gearW:14,relicW:26,skillW:5,fantW:6,gearBase:26000,gearRate:260,forgeStone:540,skillBase:19225,skillRate:192.25,relicBaseCost:2300,relicRate:230,relicTier:"purple"},
+ 4:{floor:190,relicFloor:20,relicBase:19,fixed:120,perStar:7,charW:100,gearW:17,relicW:28,skillW:5,fantW:11,gearBase:57000,gearRate:570,forgeStone:550,skillBase:38425,skillRate:384.25,relicBaseCost:4600,relicRate:460,relicTier:"purple"},
+ 5:{floor:220,relicFloor:23,relicBase:22,fixed:150,perStar:4,charW:100,gearW:18,relicW:30,skillW:6,fantW:12,gearBase:101000,gearRate:1010,forgeStone:580,skillBase:65425,skillRate:654.25,relicBaseCost:8000,relicRate:800,relicTier:"purple"},
+ 6:{floor:250,relicFloor:26,relicBase:25,fixed:200,perStar:3,charW:100,gearW:13,relicW:18,skillW:4,fantW:5}
+};
+// Day (counted from the server's opening, Day 1) on which each season starts, from 0xNobody's server calendar.
+const SEASON_START_DAY={1:1,2:47,3:114,4:215,5:316,6:417};
+const seasonDays=s=>SEASON_START_DAY[s+1]?SEASON_START_DAY[s+1]-SEASON_START_DAY[s]:null;
+const S2CAPS=[{level:130,skill:130,gear:130,fant:130,relic:13},{level:131,skill:160,gear:150,fant:160,relic:16},{level:140,skill:170,gear:170,fant:170,relic:17},{level:150,skill:180,gear:190,fant:180,relic:18},{level:160,skill:190,gear:210,fant:190,relic:19},{level:170,skill:200,gear:230,fant:200,relic:20},{level:180,skill:280,gear:430,fant:280,relic:28}];
+// Long-run average material per Realm entry, by season and rank I/II/III (0xNobody's model).
+const REALM={1:[[584.4,5927.5,807.7,550.2],[673.6,6855.2,933.5,636.4],[775.9,7937.6,1086.7,734]],2:[[1016.3,10308.6,1413.1,968.7],[1093.2,11133.3,1526.2,1035.4],[1194.8,12164.2,1667.5,1132.3]],3:[[1930.9,19586.4,2684.9,1840.5],[1981.7,20101.8,2754.2,1884.3],[2032.5,20617.2,2826.3,1937.4]],4:[[4065.1,41234.5,5652.5,3874.8],[4319.1,43811.6,6004.4,4112.3],[4573.2,46388.8,6359.1,4359.2]],5:[[7113.8,72160.4,9891.9,6781],[7622,77314.7,10598.5,7265.3],[8130.1,82469,11305,7749.7]]};
+const dec=s=>s.split(".").map(v=>parseInt(v,36));
+const CHARXP={},FANTXP={};
+for(const k in XPSRC.char)CHARXP[k]=dec(XPSRC.char[k]);
+for(const k in XPSRC.fant)FANTXP[k]=dec(XPSRC.fant[k]);
+
+const I18N={
+es:{
+ name:"Planificador de Estrellas Primarias",
+ subtitle:"Calcula cuántas Estrellas Primarias tendrás al terminar la temporada de Sword x Staff y qué te falta para llegar a tu meta.",
+ welcome:"¿Primera vez aquí? Llena los pasos 1 a 5 con tus datos del juego; cada dato te explica dónde verlo. Si prefieres ver primero cómo funciona, carga un ejemplo.",
+ start:"Empezar: 1. Temporada", fill_start:"Comenzar: llenar mis datos", fill_more:"Continuar llenando: {t}", see_example:"Ver un ejemplo",
+ example:"Estos son datos de ejemplo de un jugador real de la temporada 1. Cámbialos por los tuyos; se guardan solo en este navegador.",
+ clear:"Borrar todo", clear_confirm:"Toca otra vez para borrar", clear_all:"Borrar todos los datos", clear_all_hint:"Vacía todas las pestañas para empezar de cero. Te pide tocar dos veces por si fue sin querer.", clear_tab:"Limpiar esta pestaña", clear_tab_confirm:"¿Seguro? Toca otra vez para limpiarla",
+ sec_time:"Temporada y tiempo", season:"Temporada", season_n:"Temporada {n}",
+ reset_time:"Hora del reset diario (tu hora)", boost:"Horas extra por reset",
+ crystals:"Cristales Temporales que gastarás esta temporada", crystals_hint:"Cada Cristal Temporal te da al instante 2 horas de lo que producen tu Carro y tu Cama. Pon solo los que decidas gastar antes del cierre (los que tienes más los que esperas conseguir). Si prefieres guardarlos para la próxima temporada, pon 0.",
+ crystal_h:"Horas de cristales",
+ mode_remaining:"Tiempo restante", mode_exact:"Fecha de fin", mode_start:"Fecha de inicio",
+ hint_need:"Llena este dato para saber cuándo termina tu temporada.",
+ mode_one:"Elige solo una forma, la que sepas. Al cambiar de forma, la nueva se llena sola con el mismo fin, así nunca hay dos fechas que choquen.",
+ start_date:"Día en que empezó tu temporada",
+ h_start_date:"En la temporada 1 es el día en que abrió tu servidor. La calculadora le suma lo que dura la temporada (T1: 46 días, T2: 67, T3 a T5: 101 cada una, según el calendario de 0xNobody).",
+ hint_start:"Tu temporada {s} dura {d} días y termina el {end} (compáralo con el aviso del juego cuando salga).",
+ hint_start_unknown:"Todavía no se sabe cuánto dura la temporada {s}. Usa «Tiempo restante» o «Fecha de fin».",
+ days:"Días", hours:"Horas",
+ hint_remaining:"Copia el contador del juego. La temporada termina en el primer reset después de ese tiempo: {end}",
+ hint_exact:"Fin de temporada: {end}",
+ end_exact:"Termina el", save_exp:"Guardar 36 h de Carro y Cama para la próxima temporada (recomendado)",
+ save_hours:"Horas a guardar (máx. 36)",
+ save_when:"Reclama el Carro y la Cama por última vez el {when} y no los vuelvas a reclamar hasta que empiece la próxima temporada ({end}). Así arrancas con {h} h de recursos y EXP guardadas. Las aceleraciones diarias y los Cristales Temporales sí los puedes seguir usando.",
+ save_now:"Ya estás dentro de las últimas {h} h: deja de reclamar el Carro y la Cama desde ahora hasta que empiece la próxima temporada ({end}).",
+ last_claim:"Último reclamo de Carro y Cama",
+ sec_char:"Personaje", char_lv:"Nivel actual", char_xp:"EXP dentro del nivel", xp_hr:"EXP por hora (Cama)",
+ char_floor:"En la temporada {s} se puntúa desde el Lv{f}. Cada nivel por encima vale 100 puntos.",
+ gear:"Equipamiento", skill:"Habilidades", fant:"Fantomons", relic:"Reliquias",
+ gear_names:["Arma","Sub-arma","Casco","Armadura","Botas"], skill_sub:["Técnicas","Amuletos"], fant_names:["Principal","Sec. 1","Sec. 2","Sec. 3"],
+ group_hint:{gear:"{w} puntos por cada nivel por encima del Lv{f}, sumando los 5 slots.",skill:"{w} puntos por nivel por encima del Lv{f}, en las 8 habilidades (4 Técnicas y 4 Amuletos).",fant:"{w} puntos por nivel por encima del Lv{f}, en los 4 de tu Alineación (1 principal y 3 secundarios). Los demás siguen la Resonancia (el nivel del más bajo de los 4) y no suman aparte. Los 3 secundarios no pueden tener más nivel que el principal.",relic:"{w} puntos por cada + por encima de +{f}. Cuentan solo las 4 reliquias del recuadro Nivel de Resonancia de cada elemento (Luz, Oscuridad, Viento, Agua y Fuego): 5 × 4 = 20. Las demás de ese elemento siguen el Nivel de Resonancia (el + de la más baja de las 4) y no suman aparte. Las ves en Reliquia, cambiando de elemento con los iconos de abajo.", relic_el:["Luz","Oscuridad","Viento","Agua","Fuego"]},
+ try_goals:"Probar mis propias metas (opcional)",
+ try_goals_hint:"Si quieres probar hasta qué nivel subir algo, ponlo aquí: el resumen te dice cuántas estrellas tendrías y si te alcanzan los materiales. El botón «Cargar este plan en mis niveles» también llena esta parte. Si la dejas vacía, se cuentan tus niveles actuales.",
+ now:"Actual", plan:"Meta", set_cur:"Todos: actual", set_plan:"Todos: meta", fill_cap:"Meta al tope ({c})", per_slot:"Editar uno por uno", el_all:"Las 4",
+ sec_mat:"Materiales", mat_hint:"Si además gastas Aguante en un material, súmalo a «Carro por hora». El cálculo supone que reclamas el Carro antes de que se llene (guarda 36 h). La Cronoarena Rara y las Golosinas Prémium y Lujosas se convierten solas según lo que valen.",
+ mat:"Material", have:"Tengo", per_hour:"Carro por hora", per_day:"Extra por día",
+ ore:"Mineral Bruto", rola:"Rolla", essence:"Esencia de Batalla", sand:"Cronoarena", treats:"Golosinas", forge:"Mineral Refinado", sand_C:"Cronoarena", sand_B:"Cronoarena Rara", sand_P:"Cronoarena morada", treats_C:"Golosinas Básicas", treats_B:"Golosinas Prémium", treats_P:"Golosinas Lujosas", sand_C_h:"borde gris", sand_B_h:"azul = 5 Cronoarena", sand_P_h:"= 25 Cronoarena (desde la Temporada 2)", treats_C_h:"+50 EXP", treats_B_h:"+400 EXP = 8 Básicas", treats_P_h:"+2.000 EXP = 40 Básicas",
+ exp_per_treat:"EXP por Golosina Básica",
+ sec_realm:"Reinos de Materiales", realm_hint:"Entradas que tienes guardadas, las que te dan las misiones diarias (5 de cada tipo) y cuántas veces compras cada tipo al día en la tienda (máx. 20; cada compra da 5 entradas). La calculadora lo multiplica por los días que faltan.",
+ buys:"Compras por día",
+ realm_rank:"Tu rango (ej. Experto III)", rank_n:"Rango {n}",
+ entry:"Entrada", gives:"Da en promedio", per_reset:"Misiones por día",
+ hammers:"Martillos de Hierro", rolae:"Picos Dorados", gloves:"Guantes Desgastados", shovels:"Palas de Arena",
+ sec_goal:"Tu meta", primo_have:"Estrellas Primarias de temporadas anteriores", primo_target:"Meta total de Estrellas Primarias",
+ primo_have_hint:"Las que ya te entregaron al cerrar temporadas pasadas. No pongas las que ves ahora en Progreso: esas son de esta temporada y la calculadora ya las cuenta con tus niveles. En la temporada 1 es 0.",
+ lead:"Al terminar la temporada tendrás", stars:"Estrellas Primarias",
+ p_score:"{n} por puntuación", p_fixed:"{n} fijas", p_have:"{n} de temporadas anteriores",
+ next_star:"Te faltan {n} puntos para la siguiente estrella.",
+ target_ok:"Llegas a tu meta de {t} con {n} de sobra.",
+ target_miss:"Para llegar a {t} te faltan {n} estrellas, o sea {p} puntos más. Eso equivale a cualquiera de estas opciones:",
+ eq_char:"{n} niveles de personaje", eq_gear:"{n} niveles de equipamiento (sumando slots)", eq_skill:"{n} niveles de habilidad", eq_fant:"{n} niveles de fantomon", eq_relic:"{n} + de reliquia",
+ when:"Cuándo termina", ends:"Termina", left:"Falta", resets:"Resets antes del fin", prod_h:"Horas de producción (Carro)", xp_h:"Horas de EXP usadas", saved_xp:"EXP guardada para la próxima",
+ char_proj:"Personaje al final", lv:"Lv{l} ({p}%)",
+ score:"Puntuación", cat:"Categoría", lvls:"Niveles", weight:"Peso", points:"Puntos", total:"Total",
+ char:"Personaje",
+ materials:"Materiales para tus metas", need:"Necesitas", will_have:"Tendrás", status:"Estado",
+ st_ok:"Alcanza", st_entries:"Usa {n} de {m} entradas", st_short:"Faltan {n}", st_unknown:"Sin datos",
+ forge_note:"Mineral Refinado: necesitas {n} (cada 5 niveles de equipamiento). Tienes {h}.",
+ w_below:"Tu nivel está por debajo del Lv{f}. La tabla de EXP de esta temporada empieza ahí, así que el cálculo arranca desde Lv{f} con 0 EXP.",
+ w_table:"La tabla de EXP de la temporada {s} termina en el Lv{l}; la proyección se detiene ahí.",
+ w_noxp:"La temporada {s} todavía no tiene tabla de EXP ni costos. Solo se calcula la puntuación con los niveles que pongas.",
+ w_cap:"{g}: el tope a tu nivel proyectado es {c}. Lo que pase de ahí no suma.",
+ w_cost:"Hay niveles sin costo conocido en {g}; el total de materiales es un mínimo.",
+ w_ended:"La fecha de fin ya pasó. Revisa el tiempo restante.",
+ suggest_btn:"Sugerir plan",
+ suggest_hint:"Busca la forma más barata de llegar a tu meta con los materiales que tendrás. Si no pones meta, busca el máximo de Estrellas Primarias que alcanzas.",
+ plan_reach:"Con este plan llegas a {n} Estrellas Primarias.",
+ plan_max:"Lo máximo que alcanzas con tus materiales: {n} Estrellas Primarias.",
+ plan_cant:"Con tus materiales no llegas a {t}. Lo máximo es {n}:",
+ plan_done:"No hace falta subir nada: ya llegas a tu meta de {t}.",
+ plan_tight:"Material más justo: {m} (te sobra {p}%).",
+ plan_forge:"También necesitas {n} de Mineral Refinado; pon cuánto tienes para comprobarlo.",
+ plan_caps1:"En la temporada 1 el plan no pasa las habilidades de tu nivel actual ni los fantomons de la siguiente decena, por si esos topes existen (no está confirmado).",
+ plan_real:"Tu meta realista es {n} Estrellas Primarias. A {t} no llegas con los días y los recursos que te quedan. Para {n}, sube esto:",
+ plan_goal_path:"Si aun así quieres llegar a {t}, el camino más barato es:",
+ plan_missing:"Con lo que tendrás no te alcanza. Te falta conseguir:",
+ miss_buy:"unas {e} entradas más de {it} (compra {k} más al día)",
+ miss_entries:"unas {e} entradas más de {it}, más de lo que la tienda te deja comprar en los días que quedan",
+ miss_treats:"unas {b} Golosinas Lujosas (+2000)",
+ step_n:"Paso {n} de {m}", prev_tab:"Anterior: {t}", progress:"Pasos completos: {n} de {m}",
+ step_ok:"Este paso está completo.", step_ok_paid:"Este paso es opcional: déjalo en 0 si no compras nada con dinero real.", step_miss:"Te falta en este paso: {f}.",
+ i_goal:"Aquí ves si llegas a tu meta y qué hacer. Primero completa los pasos 1 a 5 (las pestañas con punto rojo tienen datos sin llenar); el paso 6 es opcional.",
+ h_target:"Cuántas Estrellas Primarias quieres tener al cerrar la temporada. Elige en la lista un hito del Pacto Astral (cada uno te da un premio) o escribe el número que quieras. Déjalo vacío y la calculadora te dice el máximo que alcanzas.",
+ pact_r:["ATQ +1%","Mazmorra: Aparición de Equipamiento +3%","DEF +1%","Aparición de Gemas +5%","PS +1%","Mazmorra: Recompensas de Valoración ×2 +2%","VEL +1%","Obtención de EXP +2%"],
+ pact_pick:"Hitos del Pacto…", pact_pick_l:"Elegir un hito del Pacto Astral",
+ pn_hit:"{t} es un hito del Pacto Astral: te da <b>{r}</b>. Con él tendrías {k} premios del Pacto en total.",
+ pn_miss:"{t} no es un hito del Pacto Astral: no te da ningún premio nuevo.",
+ pn_both:"Vale más quedarte en <b>{p}</b> o subir hasta <b>{q}</b>, que son {d} estrellas más que {t}.", pn_first:"El primer hito es <b>{q}</b>.",
+ pn_keep:"Si igual eliges {t}, las estrellas de más no se pierden: se suman en el Pacto para el siguiente hito.",
+ pn_top:"Por encima de 860 todavía no tenemos confirmados los hitos del Pacto Astral.", pn_use:"Usar {n} como meta",
+ pact_got:"<b>Pacto Astral:</b> tu último premio sería {p}.", pact_none:"<b>Pacto Astral:</b> aún no llegas al primer premio, {p}.",
+ pact_next:"El próximo es {p}: te faltan {d}.", pact_extra:"Las {x} estrellas de más no se pierden: se guardan en el Pacto para el próximo.", pact_top:"Por encima de 860 todavía no tenemos confirmados los hitos.",
+ pact_h:"Ver todos los hitos del Pacto Astral", pact_intro:"Al cerrar la temporada tus Estrellas Primarias se suman en el Pacto Astral, y cada hito te da un premio para las temporadas siguientes. Se acumulan de una temporada a otra: lo que sobra cuenta para el próximo hito. ✓ = lo alcanzas con el número grande del panel ({n}).",
+ pact_stars:"Estrellas", pact_reward:"Premio", pact_next_tag:"Próximo", pact_unconf:"Hitos por encima de 860: sin confirmar.",
+ rank_line:"Clasificación: tu Valoración de Progreso al cierre sería {s} (+{d} frente a no subir nada).",
+ i_time:"Cuánto tiempo te queda. Todo lo demás (EXP, materiales, entradas) se multiplica por este tiempo.",
+ sub_end:"¿Cuándo termina tu temporada?", sub_account:"Datos de tu cuenta (cambian según el jugador)",
+ h_season:"La temporada de tu servidor. Cada una tiene sus propios costos y puntos.",
+ h_reset:"La hora de tu país en que el juego renueva lo diario. En el juego sale como 8:00 (UTC-5), que en Venezuela son las 9:00.",
+ h_boost:"Las horas de Aceleración gratis que te da la Cama cada día (el número del botón Aceleración).",
+ res_explain:"Al empezar una temporada nueva todo se reinicia, y lo guardado en el Carro y la Cama te da un arranque fuerte. Para guardarlo, en las últimas 36 h desactiva «Obtener Todo» en el Carro y en la Cama y no los reclames. Si lo dejas activado, se reclaman solos y pierdes la reserva.",
+ ref_cap:"Desactiva estos dos botones (arriba a la derecha del Carro y de la Cama).", ref_alt:"El botón Obtener Todo en la Cama y en el Carro",
+ h_save_hours:"Lo normal es 36, que es lo máximo que guardan.",
+ i_char:"El personaje es lo que más puntos da. Con tu nivel, tu EXP y lo que da tu Cama, la calculadora sabe hasta qué nivel llegas al cierre.",
+ h_char_lv:"El nivel que ves en la pantalla de tu personaje.",
+ h_char_xp:"La EXP que llevas dentro de ese nivel (la de la barra), no la total.",
+ bed_xp:"EXP acumulada en la Cama (opcional)", h_bed_xp:"La EXP que ya está en la Cama sin reclamar: el primer número de «Progreso de Producción» (por ejemplo 107K de 107K/2,65M). Si ya estás en las últimas 36 h no se suma, porque es parte de tu reserva.",
+ h_xp_hr:"Toca la Cama: es el número de «EXP/h». Si tienes el Pase Mensual, ya trae su +5% (sale en «Bonificación»).",
+ i_levels:"Pon el nivel actual de cada cosa. Si todas van iguales, escríbelo en «Todos: actual» y se llena solo.",
+ i_mat:"Lo que ya tienes y lo que te llega solo. Con esto se paga cada nivel que subas.",
+ col_have:"Tengo: lo que ves en tu inventario (Objetos), reclamando el Carro antes de anotarlo. La Cronoarena y las Golosinas tienen una casilla por calidad: Cronoarena y Cronoarena Rara; Golosinas Básicas, Prémium y Lujosas.", col_hour:"Carro por hora: lo que muestra tu Carro junto a cada material (por ejemplo +1065/h). El Carro da todos estos materiales menos el Mineral Refinado: Mineral Bruto, Rolla, Esencia de Batalla, Cronoarena y Golosinas Básicas. De Cronoarena y Golosinas da la calidad básica (borde gris), así que va en esas filas.", col_day:"Extra por día: lo que te llega fijo cada día por otras recompensas, fuera del Carro.", use_daily:"Recibo materiales extra cada día, fuera del Carro (opcional)",
+ h_exp_treat:"Una Golosina Básica da 50 EXP. Cámbialo solo si el juego lo cambia.",
+ i_realm:"Las entradas a los Reinos de Materiales son tu mayor fuente de materiales.",
+ h_rank:"Tu rango en los Reinos (por ejemplo Experto III). Un rango más alto da más material por entrada.",
+ col_r_have:"Tengo: las entradas que tienes guardadas.", col_r_quests:"Misiones por día: las que te dan las misiones diarias, 5 de cada una: Martillos y Picos por «Realiza 2 Compras en el Puesto del Vendedor», Guantes por «Consume 30 Aguante» y Palas por «Enfréntate a Ascenso de Fantasía». Si no haces alguna, pon 0 en esa fila.", col_r_buys:"Compras por día: cuántas veces compras en la tienda cada día (de 0 a 20, el «Límite de Compra Diario» de cada Reino); cada compra da 5 entradas y cuesta 100.", col_r_gives:"Da en promedio: lo que suele dar cada entrada a tu rango.",
+ i_paid:"Opcional, para quien compra con dinero real. Pon solo lo que de verdad vas a comprar antes del cierre.",
+ h_pass:"Da +5% a lo que producen tus Carros y +5% de EXP de Cama.", sub_packs:"Paquetes",
+ pl_ended:"Esta temporada ya terminó",
+ pl_blocked:"Todavía no puedo armar tu plan", pl_blocked_sub:"Primero llena por lo menos tu Personaje (paso 2) y tus Niveles (paso 3). Arriba ves la lista de lo que falta.",
+ pl_gaps:"Ojo: te faltan algunos datos (mira la lista de arriba), así que este plan puede salir más bajo de lo real.",
+ v_reach:"Llegas a tu meta de {t}", v_reach_sub:"Con el plan de abajo terminas la temporada con {n} Estrellas Primarias.",
+ v_no:"A {t} no llegas esta temporada", v_no_sub:"Tu meta realista es {n} Estrellas Primarias, siguiendo el plan de abajo.",
+ v_max:"Lo máximo que alcanzas: {n} Estrellas Primarias", v_max_sub:"Siguiendo el plan de abajo.",
+ pl_h_up:"Qué subir", pl_h_todo:"Qué hacer hasta el cierre", pl_h_mat:"Tus materiales con este plan", pl_h_more:"Si quieres llegar a {t}",
+ pl_levels:"Niveles", pl_cost:"Cuesta", pl_nothing:"No hace falta subir nada más.", pl_intro:"Este plan cuenta todo lo que tendrás al cierre: lo que ya tienes, más lo que producen tu Carro y tu Cama, las misiones diarias, las entradas de Reinos y tus compras. Más abajo, en «Solo con lo que tienes hoy», ves cuánto llegas sin farmear más.",
+ pl_skip_cap:"{g}: no sale en la tabla porque ya llegó a su tope a tu nivel ({c}).", pl_skip_relic1:" El siguiente + se desbloquea con el personaje en Nv.{l}.", pl_skip_none:"{g}: no sale en la tabla porque subir más no te da otra estrella entera con el material que tendrás.",
+ pl_now_how:"Sube solo esto; es lo mínimo para llegar a esas estrellas:", pl_now_none:"No subas nada: con lo que tienes guardado no alcanzas otra estrella, así que guárdalo todo.", pl_now_res:", sin tocar la reserva de 36 h", pl_h_spend:"Qué gastar y qué guardar", spend:"Gasta", own:"Tienes", keep:"Guarda", pl_spend_note:"Lo de la columna «Guarda» no te da otra estrella esta temporada aunque lo gastes, así que mejor no lo toques. Las entradas se calculan con lo que da cada una en promedio, así que puede variar un poco.",
+ pl_intro3:"El plan te muestra 3 escenarios. Cada uno cuenta cosas distintas: la nota gris debajo de cada título te dice qué incluye. Cada uno te dice también qué premio del Pacto Astral alcanzas y tu Valoración de Progreso para la Clasificación de Valoración de Temporada (la Clasificación también suma Jugabilidad y Equipamiento, que esta calculadora no mide).",
+ sc1_h:"1. Tu meta", sc1_note:"Qué subir para llegar a la meta que escribiste, contando todo lo que tendrás hasta el cierre: lo que ya tienes, el Carro, la Cama, las misiones, las entradas de Reinos y tus compras.", sc1_none:"Escribe una meta en «Meta total de Estrellas Primarias» (arriba) para ver este escenario.", sc1_no_sub:"Con todo lo que tendrás hasta el cierre llegas como máximo a {n} (es el escenario 2).",
+ sc2_h:"2. Tu meta realista", sc2_note:"Lo máximo que alcanzas con todo lo que tendrás hasta el cierre (lo que ya tienes, el Carro, la Cama, las misiones, las entradas de Reinos y tus compras), gastando lo mínimo para llegar ahí.",
+ sc3_h:"3. Gasta hoy y ahorra desde hoy", sc3_note:"Gastas solo lo que ya tienes guardado (inventario y entradas de Reinos) y desde hoy ahorras todo lo demás para la próxima temporada. No cuenta lo que producirá el Carro, las misiones, las compras ni los paquetes; tu personaje sí sigue ganando EXP de la Cama{r}. Es lo que muestra el panel «Al terminar la temporada tendrás».", sc3_v:"Terminas la temporada con {n} Estrellas Primarias", sc3_today:"Hoy mismo, apenas subas lo de la tabla, tendrías {n}. ", sc3_lv:"Tu personaje termina en Lv{lv}.",
+ hero_note:"Si hoy gastas solo lo que ya tienes guardado (inventario y entradas de Reinos) y desde hoy ahorras el resto, mientras tu personaje sigue ganando EXP de la Cama{r}. Es el escenario 3 del plan.", hero_today:"Hoy mismo, apenas lo gastes, tendrías {n}.",
+ alt_none:"Si no subes nada más", alt_goals:"Con tus metas de prueba", alt_note_none:"No gastas ningún material; solo tu personaje sigue ganando EXP.", alt_note_goals:"Con los niveles que pusiste en «Probar mis propias metas».", score_cur:"con tus niveles actuales", score_goal:"con tus metas de prueba", pl_left:"Sobran {n}", pl_short:"Faltan {n}", pl_unknown:"Pon cuánto tienes",
+ pl_more_intro:"El camino más barato sería este, pero con lo que tendrás no alcanza:",
+ td_use:"Usa {n} entradas de {it}. No necesitas comprar más.",
+ td_buy:"Usa {n} entradas de {it}: para eso compra {k} al día en la tienda.",
+ td_nobuy:"No necesitas comprar {it}: con lo que produces te alcanza.",
+ td_feed:"Dale {n} de EXP en Golosinas a tus Fantomons.",
+ td_crystals:"Usa tus {n} Cristales Temporales antes del cierre ({end}).",
+ td_reserve:"El {when}: desactiva «Obtener Todo» en el Carro y la Cama y no los reclames hasta que empiece la próxima temporada ({end}).",
+ td_reserve_now:"Desde ya: desactiva «Obtener Todo» en el Carro y la Cama y no los reclames hasta que empiece la próxima temporada ({end}).",
+ td_level:"Sube los niveles de la tabla «Qué subir» a medida que tengas el material.",
+ plan_use:"Cargar este plan en mis niveles", plan_used:"Plan cargado en la pestaña Niveles.",
+ tab_goal:"Mi meta", tab_time:"Temporada", tab_char:"Personaje", tab_levels:"Niveles", tab_mat:"Materiales", tab_realm:"Reinos", tab_paid:"Pagos (opcional)",
+ next_tab:"Continuar: {t}",
+ miss_head:"Te falta llenar:",
+ miss_why:"Sin estos datos el cálculo no está completo y el plan puede salir más bajo de lo real. Toca cada sección para ir a llenarla.",
+ ready:"Tienes todos los datos. Toca «Sugerir plan» para ver qué hacer.",
+ week_day:"Día en que se renueva tu tienda semanal", week_day_hint:"Míralo en el contador de Ofertas Semanales; se renueva a la hora de tu reset diario. Sirve para saber cuántos paquetes semanales caben antes del cierre.",
+ res_head:"Reserva de 36 h de Carro y Cama",
+ res_keep_free:"Guardarla no te cuesta ninguna estrella en esta temporada. No la toques: empiezas la próxima con 36 h de ventaja.",
+ res_keep_cost:"Si gastaras la reserva ahora llegarías a {s} (+{n}), pero empezarías la próxima temporada sin las 36 h de ventaja. Solo vale la pena si esas {n} estrellas te importan más que un buen arranque.",
+ res_spend_free:"Estás contando la reserva para esta temporada y no te da ninguna estrella extra. No vale la pena: marca «Guardar 36 h» y empieza la próxima temporada con ventaja.",
+ res_spend_cost:"Estás contando la reserva para esta temporada: te da {n} estrellas más (llegas a {s}), pero empiezas la próxima temporada sin las 36 h de ventaja.",
+ sec_paid:"Pase Mensual y paquetes de pago",
+ paid_hint:"Opcional, para quien compra con dinero real. Pon solo lo que de verdad vas a comprar antes del cierre y verás cuántas Estrellas Primarias te suma.",
+ pass:"Pase Mensual (4,99 $)", pass_none:"No lo tengo", pass_active:"Ya lo tengo activo", pass_buy:"Lo voy a comprar",
+ pass_hint_none:"Da +5% a la producción de tus Carros y +5% de EXP de Cama. Si lo compras ahora, hasta el cierre ganarías unos {xp} de EXP, {ore} de Mineral Bruto, {rola} de Rolla, {essence} de Esencia de Batalla y {sand} de Cronoarena.",
+ pass_hint_active:"Tus valores por hora ya incluyen su +5%, así que no se suma nada aparte. Si vence antes del cierre, tu producción bajará un 5%.",
+ pass_hint_buy:"Sumado a tus cálculos: unos {xp} de EXP, {ore} de Mineral Bruto, {rola} de Rolla, {essence} de Esencia de Batalla y {sand} de Cronoarena hasta el cierre.",
+ pack:"Paquete", pack_gives:"Da", pack_buy:"Cuántos compro",
+ pk_forja:"Paquete de Forja (4,99 $)", pk_esencia:"Paquete de Esencia (2,99 $)", pk_crono:"Paquete de Cronoarena (9,99 $)", pk_feliz:"Paquete de Felicidad (0,99 $)",
+ pk_week:"Ofertas Semanales, 1 por semana", pk_day:"Ofertas Diarias, 1 por día", pk_max:"máx. {n} antes del cierre",
+ pack_hint:"Solo cuento lo que sirve para las estrellas; los diamantes y los objetos al azar no se suman. Las cantidades son las que muestra la tienda en la temporada 1, redondeadas. Ningún paquete da Rolla.",
+ miss_nopack:"La Rolla no se vende en paquetes, así que ni pagando se cubre",
+ miss_pack_or:"o, pagando, con {k} × {p}",
+ miss_pack_ok:"pagando, lo cubres con {k} × {p}",
+ miss_pack_no:"ni pagando se cubre: harían falta {k} × {p} y antes del cierre solo se pueden comprar {l}",
+ plan_pass:"Si compras el Pase Mensual, lo máximo que alcanzas sube de {m} a {n} Estrellas Primarias.",
+ plan_capped:"Ni subiendo todo al tope llegas a {t}: con tu nivel de personaje lo máximo posible es {n}. Los topes suben con tu nivel.",
+ w_have_s1:"Pusiste {h} Estrellas Primarias de temporadas anteriores, pero estás en la temporada 1, así que debería ser 0. Si son las que ves en Progreso, bórralas: la calculadora ya las cuenta y saldrían dobles.", w_s1caps:"En la temporada 1 solo se aplica el tope de reliquias (que sí está confirmado). La calculadora de Avalon además limita las habilidades al nivel del personaje y fantomons a la siguiente decena; eso no está confirmado, así que revisa tu tope en el juego.",
+ sbar:"Estrellas Primarias al final",
+ footer:"Hecho por fans, sin relación con Boltray. La fórmula de puntuación da lo mismo que la pantalla Progreso de la temporada 1 del juego (14.067 puntos = 150 Estrellas Primarias). Los datos de EXP, costos y puntuación vienen del <a href=\"https://0xnobodyyt.github.io/sxs-primo-calculator/\" target=\"_blank\" rel=\"noopener\">planificador de 0xNobody</a>, que los extrajo del cliente del juego. Las reglas de la temporada 1 coinciden con la <a href=\"https://primostar.vercel.app\" target=\"_blank\" rel=\"noopener\">calculadora de Avalon</a>. Son estimados: lo que da cada entrada a un Realm (promedio a largo plazo). Las temporadas 6 en adelante no tienen costos publicados."
+},
+en:{
+ name:"Primo Star Planner",
+ subtitle:"Work out how many Primo Stars you'll have when the Sword x Staff season ends, and what you still need to reach your goal.",
+ welcome:"First time here? Fill in steps 1 to 5 with your game data; every field explains where to find it. If you'd rather see how it works first, load an example.",
+ start:"Start: 1. Season", fill_start:"Start: enter my data", fill_more:"Keep filling in: {t}", see_example:"See an example",
+ example:"This is example data from a real Season 1 player. Replace it with yours; it's saved only in this browser.",
+ clear:"Clear everything", clear_confirm:"Tap again to clear", clear_all:"Clear all data", clear_all_hint:"Empties every tab so you can start from scratch. It asks for a second tap in case it was a mistake.", clear_tab:"Clear this tab", clear_tab_confirm:"Sure? Tap again to clear it",
+ sec_time:"Season and time", season:"Season", season_n:"Season {n}",
+ reset_time:"Daily reset time (your time)", boost:"Bonus hours per reset",
+ crystals:"Time Crystals you'll spend this season", crystals_hint:"Each Time Crystal instantly gives you 2 hours of what your Cart and Bed produce. Enter only the ones you decide to spend before the end (the ones you have plus any you expect to get). If you'd rather keep them for next season, enter 0.",
+ crystal_h:"Crystal hours",
+ mode_remaining:"Time left", mode_exact:"End date", mode_start:"Start date",
+ hint_need:"Fill this in so the calculator knows when your season ends.",
+ mode_one:"Pick just one, whichever you know. When you switch, the new one fills in with the same end, so two dates can never disagree.",
+ start_date:"Day your season started",
+ h_start_date:"In Season 1 it's the day your server opened. The calculator adds the season's length (S1: 46 days, S2: 67, S3 to S5: 101 each, from 0xNobody's calendar).",
+ hint_start:"Your Season {s} lasts {d} days and ends {end} (check it against the in-game notice when it appears).",
+ hint_start_unknown:"Season {s}'s length isn't known yet. Use \"Time left\" or \"End date\".",
+ days:"Days", hours:"Hours",
+ hint_remaining:"Copy the in-game countdown. The season ends at the first reset after that time: {end}.",
+ hint_exact:"Season ends: {end}.",
+ end_exact:"Ends on", save_exp:"Save 36 h of Cart and Bed for next season (recommended)",
+ save_hours:"Hours to save (max 36)",
+ save_when:"Claim the Cart and Bed for the last time on {when} and don't claim them again until the next season starts ({end}). That way you start with {h} h of resources and EXP banked. You can still use the daily boosts and Time Crystals.",
+ save_now:"You're already inside the last {h} h: stop claiming the Cart and Bed now until the next season starts ({end}).",
+ last_claim:"Last Cart and Bed claim",
+ sec_char:"Character", char_lv:"Current level", char_xp:"EXP into level", xp_hr:"EXP per hour (Bed)",
+ char_floor:"Season {s} scores from Lv{f}. Each level above it is worth 100 points.",
+ gear:"Gear", skill:"Skills", fant:"Fantomons", relic:"Relics",
+ gear_names:["Weapon","Sub-weapon","Helmet","Armor","Boots"], skill_sub:["Techniques","Amulets"], fant_names:["Main","Sec. 1","Sec. 2","Sec. 3"],
+ group_hint:{gear:"{w} points per level above Lv{f}, added across all 5 slots.",skill:"{w} points per level above Lv{f}, across 8 skills (4 Techniques and 4 Amulets).",fant:"{w} points per level above Lv{f}, across the 4 in your lineup (1 main and 3 secondary). The rest follow Resonance (the level of the lowest of the 4) and don't add points on their own. The 3 secondary ones can't be above the main one.",relic:"{w} points per + above +{f}. Only the 4 relics in each element\'s Resonance Level box count (Light, Dark, Wind, Water and Fire): 5 × 4 = 20. The other relics of that element follow the Resonance Level (the + of the lowest of the 4) and don\'t add points on their own. Find them under Relic, switching element with the icons at the bottom.", relic_el:["Light","Dark","Wind","Water","Fire"]},
+ try_goals:"Try my own goals (optional)",
+ try_goals_hint:"If you want to test how far to raise something, enter it here: the summary shows how many stars you'd have and whether your materials are enough. \"Load this plan into my levels\" also fills this in. Leave it blank and your current levels are counted.",
+ now:"Now", plan:"Goal", set_cur:"All: now", set_plan:"All: goal", fill_cap:"Goal to cap ({c})", per_slot:"Edit one by one", el_all:"All 4",
+ sec_mat:"Materials", mat_hint:"If you also spend stamina on a material, add it to \"Cart per hour\". This assumes you claim the Cart before it fills up (it stores 36 h). Rare Chrono Sand and Premium and Luxury Treats are converted automatically by what they're worth.",
+ mat:"Material", have:"Have", per_hour:"Cart per hour", per_day:"Extra per day",
+ ore:"Raw Ore", rola:"Rola", essence:"Essence", sand:"Chrono Sand", treats:"Treats", forge:"Forging stones", sand_C:"Chrono Sand", sand_B:"Rare Chrono Sand", sand_P:"Purple Chrono Sand", treats_C:"Basic Treats", treats_B:"Premium Treats", treats_P:"Luxury Treats", sand_C_h:"grey border", sand_B_h:"blue = 5 Chrono Sand", sand_P_h:"= 25 Chrono Sand (from Season 2)", treats_C_h:"+50 EXP", treats_B_h:"+400 EXP = 8 Basic", treats_P_h:"+2,000 EXP = 40 Basic",
+ exp_per_treat:"EXP per Basic Treat",
+ sec_realm:"Material Realms", realm_hint:"Entries you have saved, the ones daily quests give you (5 of each type) and how many times a day you buy each type in the shop (max 20; each purchase gives 5 entries). The calculator multiplies this by the days left.",
+ buys:"Purchases per day",
+ realm_rank:"Your rank (e.g. Expert III)", rank_n:"Rank {n}",
+ entry:"Entry", gives:"Average yield", per_reset:"Quests per day",
+ hammers:"Iron Hammers", rolae:"Rola entries", gloves:"Gloves", shovels:"Shovels",
+ sec_goal:"Your goal", primo_have:"Primo Stars from past seasons", primo_target:"Total Primo Star goal",
+ primo_have_hint:"The ones already awarded when past seasons closed. Don't enter the ones you see now under Progress: those belong to this season and the calculator already counts them from your levels. In Season 1 it's 0.",
+ lead:"When the season ends you'll have", stars:"Primo Stars",
+ p_score:"{n} from score", p_fixed:"{n} fixed", p_have:"{n} from past seasons",
+ next_star:"{n} more points to the next star.",
+ target_ok:"You reach your goal of {t} with {n} to spare.",
+ target_miss:"To reach {t} you need {n} more stars, which is {p} more points. Any one of these gets you there:",
+ eq_char:"{n} character levels", eq_gear:"{n} gear levels (summed across slots)", eq_skill:"{n} skill levels", eq_fant:"{n} Fantomon levels", eq_relic:"{n} relic +",
+ when:"When it ends", ends:"Ends", left:"Time left", resets:"Resets before the end", prod_h:"Production hours (cart)", xp_h:"EXP hours used", saved_xp:"EXP saved for next season",
+ char_proj:"Character at season end", lv:"Lv{l} ({p}%)",
+ score:"Score", cat:"Category", lvls:"Levels", weight:"Weight", points:"Points", total:"Total",
+ char:"Character",
+ materials:"Materials for your goals", need:"Need", will_have:"You'll have", status:"Status",
+ st_ok:"Enough", st_entries:"Use {n} of {m} entries", st_short:"{n} short", st_unknown:"No data",
+ forge_note:"Forging stones: you need {n} (every 5th gear level). You have {h}.",
+ w_below:"Your level is below Lv{f}. This season's EXP table starts there, so the projection starts at Lv{f} with 0 EXP.",
+ w_table:"Season {s}'s EXP table ends at Lv{l}; the projection stops there.",
+ w_noxp:"Season {s} has no EXP or cost table yet. Only the score from the levels you enter is calculated.",
+ w_cap:"{g}: the cap at your projected level is {c}. Anything above it doesn't count.",
+ w_cost:"Some {g} levels have no known cost, so the material total is a minimum.",
+ w_ended:"The end date has already passed. Check the time left.",
+ suggest_btn:"Suggest a plan",
+ suggest_hint:"Finds the cheapest way to reach your goal with the materials you'll have. With no goal, it finds the most Primo Stars you can reach.",
+ plan_reach:"With this plan you reach {n} Primo Stars.",
+ plan_max:"The most you can reach with your materials: {n} Primo Stars.",
+ plan_cant:"You can't reach {t} with your materials. The most is {n}:",
+ plan_done:"Nothing needs upgrading: you already reach your goal of {t}.",
+ plan_tight:"Tightest material: {m} ({p}% to spare).",
+ plan_forge:"You also need {n} forging stones; enter how many you have to check it.",
+ plan_caps1:"In Season 1 the plan keeps skills at or below your current level and Fantomons at or below the next ten, in case those caps exist (not confirmed).",
+ plan_real:"Your realistic goal is {n} Primo Stars. You can't reach {t} with the days and resources you have left. For {n}, upgrade this:",
+ plan_goal_path:"If you still want to reach {t}, the cheapest path is:",
+ plan_missing:"What you'll have isn't enough. You still need:",
+ miss_buy:"about {e} more {it} (buy {k} more a day)",
+ miss_entries:"about {e} more {it}, more than the shop lets you buy in the days left",
+ miss_treats:"about {b} Luxury Treats (+2000)",
+ step_n:"Step {n} of {m}", prev_tab:"Back: {t}", progress:"Steps complete: {n} of {m}",
+ step_ok:"This step is complete.", step_ok_paid:"This step is optional: leave it at 0 if you don't buy anything with real money.", step_miss:"Still missing in this step: {f}.",
+ i_goal:"Here you see whether you reach your goal and what to do. Fill in steps 1 to 5 first (tabs with a red dot have blank fields); step 6 is optional.",
+ h_target:"How many Primo Stars you want when the season ends. Pick an Astral Pact milestone from the list (each one gives you a reward) or type any number. Leave it blank and the calculator tells you the most you can reach.",
+ pact_r:["ATK +1%","Dungeon: Equipment drop rate +3%","DEF +1%","Gem drop rate +5%","HP +1%","Dungeon: Rating rewards ×2 chance +2%","SPD +1%","EXP gain +2%"],
+ pact_pick:"Pact milestones…", pact_pick_l:"Pick an Astral Pact milestone",
+ pn_hit:"{t} is an Astral Pact milestone: it gives you <b>{r}</b>. With it you'd have {k} Pact rewards in total.",
+ pn_miss:"{t} isn't an Astral Pact milestone: it gives you no new reward.",
+ pn_both:"You're better off stopping at <b>{p}</b> or going up to <b>{q}</b>, which is {d} stars more than {t}.", pn_first:"The first milestone is <b>{q}</b>.",
+ pn_keep:"If you still pick {t}, the extra stars aren't lost: they add up in the Pact toward the next milestone.",
+ pn_top:"Astral Pact milestones above 860 aren't confirmed yet.", pn_use:"Use {n} as the goal",
+ pact_got:"<b>Astral Pact:</b> your last reward would be {p}.", pact_none:"<b>Astral Pact:</b> you don't reach the first reward yet, {p}.",
+ pact_next:"The next one is {p}: {d} to go.", pact_extra:"The {x} extra stars aren't lost: they stay in the Pact for the next one.", pact_top:"Milestones above 860 aren't confirmed yet.",
+ pact_h:"See every Astral Pact milestone", pact_intro:"When the season ends your Primo Stars add up in the Astral Pact, and each milestone gives you a reward for the following seasons. They carry over from one season to the next: whatever is left counts toward the next milestone. ✓ = you reach it with the panel's big number ({n}).",
+ pact_stars:"Stars", pact_reward:"Reward", pact_next_tag:"Next", pact_unconf:"Milestones above 860: not confirmed.",
+ rank_line:"Leaderboard: your Progress Rating at the end would be {s} (+{d} over raising nothing).",
+ i_time:"How much time you have left. Everything else (EXP, materials, entries) is multiplied by this time.",
+ sub_end:"When does your season end?", sub_account:"Your account settings (they vary by player)",
+ h_season:"Your server's season. Each one has its own costs and points.",
+ h_reset:"The local time when the game renews daily content. The game shows it in UTC; convert it to your time.",
+ h_boost:"The free Boost hours the Bed gives you each day (the number on the Boost button).",
+ res_explain:"When a new season starts everything resets, and what's stored in the Cart and Bed gives you a strong start. To keep it, in the last 36 h turn off the auto-claim toggle on the Cart and the Bed and don't claim them. If you leave it on, they claim by themselves and you lose the reserve.",
+ ref_cap:"Turn off these two toggles (top right of the Cart and Bed windows; shown here in Spanish).", ref_alt:"The auto-claim toggle on the Bed and the Cart",
+ h_save_hours:"Usually 36, the most they can store.",
+ i_char:"Your character gives the most points. With your level, EXP and what your Bed makes, the calculator knows what level you reach by the end.",
+ h_char_lv:"The level shown on your character screen.",
+ h_char_xp:"The EXP inside that level (the bar), not the total.",
+ bed_xp:"EXP stored in the Bed (optional)", h_bed_xp:"EXP already in the Bed but not claimed: the first number of the production progress (for example 107K in 107K/2.65M). It isn't added if you're already in the last 36 h, because it's part of your reserve.",
+ h_xp_hr:"Tap the Bed: it's the EXP/h number. If you have the Monthly Pass, it already includes its +5% (shown as the bonus).",
+ i_levels:"Enter the current level of each thing. If they're all the same, type it in \"All: now\" and it fills in.",
+ i_mat:"What you already have and what comes in by itself. This pays for every level you raise.",
+ col_have:"Have: what your inventory (Items) shows, after claiming the Cart. Chrono Sand and Treats get one box per quality: Chrono Sand and Rare Chrono Sand; Basic, Premium and Luxury Treats.", col_hour:"Cart per hour: what your Cart shows next to each material (for example +1065/h). The Cart gives every material here except Forging stones: Raw Ore, Rola, Essence, Chrono Sand and Basic Treats. For Chrono Sand and Treats it gives the basic quality (grey border), so it goes in those rows.", col_day:"Extra per day: anything you get every day from other rewards, outside the Cart.", use_daily:"I get extra materials every day, outside the Cart (optional)",
+ h_exp_treat:"A Basic Treat gives 50 EXP. Only change it if the game does.",
+ i_realm:"Material Realm entries are your biggest source of materials.",
+ h_rank:"Your Realm rank. A higher rank gives more material per entry.",
+ col_r_have:"Have: entries you have saved.", col_r_quests:"Quests per day: what the daily quests give you, 5 each: Hammers and Pickaxes from the 2 Vendor Stall purchases quest, Gloves from spending 30 Stamina and Shovels from the Fantasy Ascent quest. If you skip one, enter 0 in that row.", col_r_buys:"Buys per day: how many times you buy in the shop each day (0 to 20, the daily purchase limit of each Realm); each buy gives 5 entries and costs 100.", col_r_gives:"Average yield: what each entry usually gives at your rank.",
+ i_paid:"Optional, for players who spend real money. Enter only what you'll actually buy before the end.",
+ h_pass:"Gives +5% Cart production and +5% Bed EXP.", sub_packs:"Packs",
+ pl_ended:"This season has already ended",
+ pl_blocked:"I can't build your plan yet", pl_blocked_sub:"Fill in at least your Character (step 2) and Levels (step 3) first. The list above shows what's missing.",
+ pl_gaps:"Heads up: some data is missing (see the list above), so this plan may come out lower than reality.",
+ v_reach:"You reach your goal of {t}", v_reach_sub:"With the plan below you end the season with {n} Primo Stars.",
+ v_no:"You won't reach {t} this season", v_no_sub:"Your realistic goal is {n} Primo Stars, following the plan below.",
+ v_max:"The most you can reach: {n} Primo Stars", v_max_sub:"Following the plan below.",
+ pl_h_up:"What to level up", pl_h_todo:"What to do until the end", pl_h_mat:"Your materials with this plan", pl_h_more:"If you want to reach {t}",
+ pl_levels:"Levels", pl_cost:"Cost", pl_nothing:"Nothing else needs leveling.", pl_intro:"This plan counts everything you'll have by the end: what you already have, plus what your Cart and Bed produce, daily quests, Realm entries and your purchases. Further down, under \"Only with what you have today\", you see how far you get without farming more.",
+ pl_skip_cap:"{g}: not in the table because it's already at its cap for your level ({c}).", pl_skip_relic1:" The next + unlocks with your character at Lv{l}.", pl_skip_none:"{g}: not in the table because raising it more doesn't give you another whole star with the materials you'll have.",
+ pl_now_how:"Raise only this; it's the least needed to reach those stars:", pl_now_none:"Don't raise anything: what you have saved isn't enough for another star, so keep it all.", pl_now_res:", without touching the 36 h reserve", pl_h_spend:"What to spend and what to keep", spend:"Spend", own:"You have", keep:"Keep", pl_spend_note:"What's in the \"Keep\" column won't give you another star this season even if you spend it, so better leave it. Entries use the average each one gives, so it can vary a little.",
+ pl_intro3:"The plan shows 3 scenarios. Each one counts different things: the grey note under each title tells you what it includes. Each one also tells you which Astral Pact reward you reach and your Progress Rating for the Season Rating leaderboard (the leaderboard also adds Gameplay and Equipment, which this calculator doesn't measure).",
+ sc1_h:"1. Your goal", sc1_note:"What to raise to reach the goal you entered, counting everything you'll have by the end: what you already have, the Cart, the Bed, quests, Realm entries and your purchases.", sc1_none:"Enter a goal in \"Total Primo Star goal\" (above) to see this scenario.", sc1_no_sub:"With everything you'll have by the end, the most you reach is {n} (that's scenario 2).",
+ sc2_h:"2. Your realistic goal", sc2_note:"The most you can reach with everything you'll have by the end (what you already have, the Cart, the Bed, quests, Realm entries and your purchases), spending the least to get there.",
+ sc3_h:"3. Spend today, save from today", sc3_note:"You only spend what you already have saved (inventory and Realm entries) and from today you save everything else for next season. It leaves out what the Cart will produce, quests, purchases and packs; your character does keep earning Bed EXP{r}. This is what the \"When the season ends you'll have\" panel shows.", sc3_v:"You end the season with {n} Primo Stars", sc3_today:"Right now, as soon as you raise what's in the table, you'd have {n}. ", sc3_lv:"Your character ends at Lv{lv}.",
+ hero_note:"If today you only spend what you already have saved (inventory and Realm entries) and from today you save the rest, while your character keeps earning Bed EXP{r}. This is scenario 3 of the plan.", hero_today:"Right now, as soon as you spend it, you'd have {n}.",
+ alt_none:"If you raise nothing else", alt_goals:"With your test goals", alt_note_none:"You spend no materials; only your character keeps earning EXP.", alt_note_goals:"With the levels you entered under \"Try my own goals\".", score_cur:"with your current levels", score_goal:"with your test goals", pl_left:"{n} left over", pl_short:"{n} short", pl_unknown:"Enter how many you have",
+ pl_more_intro:"This would be the cheapest path, but what you'll have isn't enough:",
+ td_use:"Use {n} {it}. You don't need to buy more.",
+ td_buy:"Use {n} {it}: buy {k} a day in the shop for that.",
+ td_nobuy:"You don't need to buy {it}: what you produce is enough.",
+ td_feed:"Feed {n} EXP worth of treats to your Fantomons.",
+ td_crystals:"Use your {n} Time Crystals before the end ({end}).",
+ td_reserve:"On {when}: turn off auto-claim on the Cart and Bed and don't claim them until the next season starts ({end}).",
+ td_reserve_now:"Starting now: turn off auto-claim on the Cart and Bed and don't claim them until the next season starts ({end}).",
+ td_level:"Raise the levels in \"What to level up\" as you get the materials.",
+ plan_use:"Load this plan into my levels", plan_used:"Plan loaded into the Levels tab.",
+ tab_goal:"My goal", tab_time:"Season", tab_char:"Character", tab_levels:"Levels", tab_mat:"Materials", tab_realm:"Realms", tab_paid:"Paid (optional)",
+ next_tab:"Continue: {t}",
+ miss_head:"Still to fill in:",
+ miss_why:"Without these the calculation isn't complete and the plan may come out lower than reality. Tap each section to fill it in.",
+ ready:"You've entered everything. Tap \"Suggest a plan\" to see what to do.",
+ week_day:"Day your weekly shop renews", week_day_hint:"Check the Weekly Offers timer; it renews at your daily reset time. It tells how many weekly packs fit before the end.",
+ res_head:"36 h Cart and Bed reserve",
+ res_keep_free:"Saving it costs you no stars this season. Leave it alone: you start the next season 36 h ahead.",
+ res_keep_cost:"If you spent the reserve now you'd reach {s} (+{n}), but you'd start the next season without the 36 h head start. Only worth it if those {n} stars matter more to you than a strong start.",
+ res_spend_free:"You're counting the reserve for this season and it gives you no extra stars. Not worth it: tick \"Save 36 h\" and start the next season ahead.",
+ res_spend_cost:"You're counting the reserve for this season: it gives you {n} more stars (you reach {s}), but you start the next season without the 36 h head start.",
+ sec_paid:"Monthly Pass and paid packs",
+ paid_hint:"Optional, for players who spend real money. Enter only what you'll actually buy before the end and see how many Primo Stars it adds.",
+ pass:"Monthly Pass ($4.99)", pass_none:"I don't have it", pass_active:"I already have it", pass_buy:"I'll buy it",
+ pass_hint_none:"Gives +5% Cart production and +5% Bed EXP. If you buy it now, by the end you'd gain about {xp} EXP, {ore} Raw Ore, {rola} Rola, {essence} Essence and {sand} Chrono Sand.",
+ pass_hint_active:"Your per-hour values already include its +5%, so nothing extra is added. If it expires before the end, your production drops 5%.",
+ pass_hint_buy:"Added to your numbers: about {xp} EXP, {ore} Raw Ore, {rola} Rola, {essence} Essence and {sand} Chrono Sand by the end.",
+ pack:"Pack", pack_gives:"Gives", pack_buy:"How many I'll buy",
+ pk_forja:"Forge Pack ($4.99)", pk_esencia:"Essence Pack ($2.99)", pk_crono:"Chrono Sand Pack ($9.99)", pk_feliz:"Happiness Pack ($0.99)",
+ pk_week:"Weekly Offers, 1 per week", pk_day:"Daily Offers, 1 per day", pk_max:"max {n} before the end",
+ pack_hint:"Only what counts for stars is added; diamonds and random items are not. Amounts are the ones the Season 1 shop shows, rounded. No pack gives Rola.",
+ miss_nopack:"Rola isn't sold in packs, so not even paying covers it",
+ miss_pack_or:"or, paying, {k} × {p}",
+ miss_pack_ok:"paying, {k} × {p} cover it",
+ miss_pack_no:"not even paying covers it: it would take {k} × {p} and only {l} can be bought before the end",
+ plan_pass:"If you buy the Monthly Pass, the most you can reach goes from {m} to {n} Primo Stars.",
+ plan_capped:"Even maxing everything you can't reach {t}: at your character level the most possible is {n}. Caps go up with your level.",
+ w_have_s1:"You entered {h} Primo Stars from past seasons, but you're in Season 1, so it should be 0. If they're the ones under Progress, clear them: the calculator already counts them and they'd be doubled.", w_s1caps:"In Season 1 only the relic cap is applied (it's confirmed). Avalon's calculator also caps skills at your character level and Fantomons at the next ten; that isn't confirmed, so check your cap in game.",
+ sbar:"Primo Stars at season end",
+ footer:"Fan-made, not affiliated with Boltray. The scoring formula matches the game's Season 1 Progress screen (14,067 points = 150 Primo Stars). EXP, cost and scoring data come from <a href=\"https://0xnobodyyt.github.io/sxs-primo-calculator/\" target=\"_blank\" rel=\"noopener\">0xNobody's planner</a>, which extracted them from the game client. Season 1 rules match <a href=\"https://primostar.vercel.app\" target=\"_blank\" rel=\"noopener\">Avalon's calculator</a>. Estimates: the yield of each Realm entry (long-run average). Season 6 and later have no published costs."
+}};
+
+const GROUPS=[
+ {key:"gear",count:5,w:"gearW",floor:"floor",costFloor:"floor"},
+ {key:"skill",count:8,w:"skillW",floor:"floor",costFloor:"floor"},
+ {key:"fant",count:4,w:"fantW",floor:"floor",costFloor:"floor"},
+ {key:"relic",count:20,w:"relicW",floor:"relicFloor",costFloor:"relicBase"}
+];
+const MATS=["ore","rola","essence","sand","treats"];
+// Higher qualities, worth N of the common one: 1 purple = 5 blue = 25 common sand (0xNobody); treats +50/+400/+2000 EXP.
+const QUAL={sand:[["B",5],["P",25]],treats:[["B",8],["P",40]]};
+// A column (H have, R Cart per hour, D extra per day) of material m in common units, adding up every quality.
+const qv=(m,k)=>k==="D"&&!$("useDaily").checked?0:n("m_"+m+k)+(QUAL[m]||[]).reduce((a,[q,x])=>a+x*n("m_"+m+q+k),0);
+const qHas=(m,k)=>has("m_"+m+k)||(QUAL[m]||[]).some(([q])=>has("m_"+m+q+k));
+const ENTRIES=[["hammers","ore"],["rolae","rola"],["gloves","essence"],["shovels","sand"]];
+const STORE="sxs-primo-planner-v2";
+// Real-money packs seen in the Season 1 shop (screenshots of 2026-10-08). The game shows them rounded ("28,9K").
+const PACKS=[{id:"forja",every:"week",give:{ore:28900,forge:300}},{id:"esencia",every:"week",give:{essence:23100}},{id:"crono",every:"week",give:{sand:42400}},{id:"feliz",every:"day",give:{shovels:6}}];
+const PASS=0.05; // Pase Mensual: +5% Cart production and +5% EXP
+// Example = a real Season 1 account (screenshots of 2026-10-08). Blank "have" values were not in the screenshots.
+const EXAMPLE={season:"1",resetTime:"09:00",boost:"2",mode:"exact",endExact:"2026-10-13T09:00",charLv:"124",charXp:"335200",xpHr:"73765",bedXp:"107000",crystals:"2",saveExp:true,
+ all:{gear:[125,125],skill:[120,120],fant:[125,125],relic:[13,13]},
+ mat:{ore:[105000,1065,""],rola:[667000,9936,""],essence:[8500,1233,""],sand:[82000,861,""],treats:[11304,91,""]},
+ realm:{hammers:[52,5,2],rolae:[0,5,2],gloves:[27,5,2],shovels:[60,5,2]},forge:"9400",primoHave:"0",primoTarget:"156",pass:"active"};
+
+const TABS=["goal","time","char","levels","mat","realm","paid"];
+let tab="goal",showExample=false,firstRun=false,remEnd=null;
+// Banner: a welcome on first visit (blank form), or a notice while the example data is loaded.
+function renderBanner(){const on=showExample||firstRun;$("exampleBox").hidden=!on||tab!=="goal";$("exampleText").textContent=t(showExample?"example":"welcome");$("startBtn").hidden=$("exampleBtn").hidden=showExample;$("clearBtn").hidden=!showExample}
+let lang="es", mode="remaining", lastEnd=null, lastCtx=null, packGive={}, saved=null, lastO=null, svTimer=null, altBusy=false;
+const BUY_MAX=20, PER_BUY=5;
+function entriesAvail(e,resets){const b=$("r_"+e+"B");if(intv(b)>BUY_MAX)b.value=BUY_MAX;return n("r_"+e+"H")+(n("r_"+e+"D")+intv(b)*PER_BUY)*resets+(packGive[e]||0)}
+// Purchases still possible before the end, counting the current day/week.
+// The weekly shop renews at the daily reset on the weekday the player picks.
+function packMax(p,now,end,h,m){
+ if(p.every==="day")return countResets(now,end,h,m)+1;
+ let k=1;const c=resetAtOrAfter(now,h,m);if(c<=now)c.setDate(c.getDate()+1);
+ const wd=Number($("weekDay").value);
+ for(;c<end;c.setDate(c.getDate()+1))if(c.getDay()===wd)k++;
+ return k}
+const $=id=>document.getElementById(id);
+const t=(k,v={})=>{let s=I18N[lang][k]??k;if(typeof s==="string")for(const x in v)s=s.split("{"+x+"}").join(v[x]);return s};
+const nf=()=>new Intl.NumberFormat(lang==="es"?"es-VE":"en-US");
+const fmt=x=>nf().format(Math.floor(x));
+// .num text fields carry thousands separators (digits only); number fields may hold "2.5" or "-1"
+const intv=el=>{if(!el)return 0;if(el.type==="number"){const v=Math.floor(Number(el.value));return v>0?v:0}const d=String(el.value).replace(/[^\d]/g,"");return d?Number(d):0};
+const n=id=>intv($(id));
+const has=id=>$(id)&&String($(id).value).trim()!=="";
+
+// Live thousands separator: keeps the caret after the same digit while you type.
+function formatNumField(el){
+ const pos=el.selectionStart??el.value.length;
+ const digitsBefore=el.value.slice(0,pos).replace(/\D/g,"").length;
+ const raw=el.value.replace(/\D/g,"");
+ el.value=raw?nf().format(Number(raw)):"";
+ if(document.activeElement!==el)return;
+ let i=0,seen=0;while(i<el.value.length&&seen<digitsBefore){if(/\d/.test(el.value[i]))seen++;i++}
+ el.setSelectionRange(i,i);
+}
+
+function buildStatic(){
+ const pk=document.querySelector(".pactPick");pk.setAttribute("aria-label",t("pact_pick_l"));
+ pk.innerHTML=`<option value="">${t("pact_pick")}</option>`+PACT.map((v,i)=>`<option value="${v}">${fmt(v)} · ${t("pact_r")[i%8]}</option>`).join("");
+ const sel=$("season");sel.innerHTML="";
+ for(let s=1;s<=6;s++){const o=document.createElement("option");o.value=s;o.textContent=t("season_n",{n:s});sel.appendChild(o)}
+ const rk=$("realmRank");const keep=rk.value||"3";rk.innerHTML="";
+ for(let r=1;r<=3;r++){const o=document.createElement("option");o.value=r;o.textContent=t("rank_n",{n:"I".repeat(r)});rk.appendChild(o)}
+ rk.value=keep;
+ const wd=$("weekDay"),keepWd=wd.value||"1";wd.innerHTML="";
+ for(let i=0;i<7;i++){const o=document.createElement("option");o.value=(i+1)%7;o.textContent=new Date(2024,0,1+i).toLocaleDateString(lang==="es"?"es-VE":"en-US",{weekday:"long"});wd.appendChild(o)} // 2024-01-01 was a Monday
+ wd.value=keepWd;
+ const ps=$("pass");ps.innerHTML="";
+ for(const v of ["none","active","buy"]){const o=document.createElement("option");o.value=v;o.textContent=t("pass_"+v);ps.appendChild(o)}
+}
+
+function buildGroups(){
+ // Step 3 shows only the current levels; the optional "Meta" (what-if) inputs live in one folded section below.
+ const host=$("groups"),gh=$("goalGroups");host.innerHTML="";gh.innerHTML="";
+ for(const g of GROUPS){
+  const label=i=>g.key==="gear"?t("gear_names")[i]:t("fant_names")[i],sb=subs(g);
+  const one=(k,i,lb,aria)=>`<div class="slot one"><span>${lb}</span><input id="${g.key}${k}${i}" type="number" inputmode="numeric" aria-label="${t(g.key)} ${aria} ${t(k==="C"?"now":"plan")}"></div>`;
+  // Relics (4 per element) and skills (4 Techniques + 4 Amulets) are shown in groups of 4, each with its own "All 4" box.
+  const slots=k=>{if(sb)return sb.map((nm,e)=>`<div class="elhead"><h4 class="el">${nm}</h4><label class="elall"><span>${t("el_all")}</span><input id="${g.key}${k}E${e}" type="number" inputmode="numeric" aria-label="${t(g.key)} ${nm} ${t("el_all")} ${t(k==="C"?"now":"plan")}"></label></div><div class="slots compact four">${[0,1,2,3].map(j=>one(k,e*4+j,j+1,nm+" "+(j+1))).join("")}</div>`).join("");
+   let h="";for(let i=0;i<g.count;i++)h+=one(k,i,label(i),label(i))+(g.key==="gear"&&i===1?'<i class="brk"></i>':"");return `<div class="slots named ${g.key==="gear"?"three":"compact four"}">${h}</div>`};
+  const sec=document.createElement("section");sec.className="box";sec.id="box-"+g.key;
+  sec.innerHTML=`<h2>${t(g.key)}</h2><p class="hint" id="hint-${g.key}"></p>
+   <div class="bulk"><label class="f"><span>${t("set_cur")}</span><input id="${g.key}AllC" type="number" inputmode="numeric"></label></div>
+   ${slots("C")}`;
+  host.appendChild(sec);
+  const gs=document.createElement("div");gs.className="goalgroup";
+  gs.innerHTML=`<h3 class="sub">${t(g.key)}</h3>
+   <div class="bulk"><label class="f"><span>${t("set_plan")}</span><input id="${g.key}AllP" type="number" inputmode="numeric"></label>
+   <button type="button" class="btn" id="${g.key}Cap" hidden></button></div>
+   ${slots("P")}`;
+  gh.appendChild(gs);
+  $(g.key+"AllC").addEventListener("input",e=>{for(let i=0;i<g.count;i++)$(g.key+"C"+i).value=e.target.value;calc()});
+  $(g.key+"AllP").addEventListener("input",e=>{for(let i=0;i<g.count;i++)$(g.key+"P"+i).value=e.target.value;calc()});
+  if(sb)for(const k of "CP")for(let e=0;e<sb.length;e++)$(g.key+k+"E"+e).addEventListener("input",ev=>{for(let j=0;j<4;j++)$(g.key+k+(e*4+j)).value=ev.target.value;calc()});
+  if(g.key==="fant")for(const k of "CP"){$("fant"+k+"0").addEventListener("change",()=>{fantCap(k);calc()});for(let i=1;i<4;i++)$("fant"+k+i).addEventListener("input",()=>{fantCap(k);calc()})}
+  $(g.key+"Cap").addEventListener("click",()=>{const c=$(g.key+"Cap").dataset.cap;if(!c)return;$(g.key+"AllP").value=c;for(let i=0;i<g.count;i++)$(g.key+"P"+i).value=c;calc()});
+ }
+}
+function buildTables(){
+ let h=`<thead><tr><th>${t("mat")}</th><th>${t("have")}</th><th>${t("per_hour")}</th><th>${t("per_day")}</th></tr></thead><tbody>`;
+ for(const m of MATS){const nm=QUAL[m]?t(m+"_C"):t(m);
+  h+=`<tr><td>${nm}${QUAL[m]?`<div class="small">${t(m+"_C_h")}</div>`:""}</td>${["H","R","D"].map(k=>`<td><input id="m_${m}${k}" class="num" type="text" inputmode="numeric" aria-label="${nm} ${t({H:"have",R:"per_hour",D:"per_day"}[k])}"></td>`).join("")}</tr>`;
+  for(const [q] of QUAL[m]||[])h+=`<tr class="q"><td>${t(m+"_"+q)}<div class="small">${t(m+"_"+q+"_h")}</div></td>${["H","R","D"].map(k=>k==="R"?"<td></td>":`<td><input id="m_${m}${q}${k}" class="num" type="text" inputmode="numeric" aria-label="${t(m+"_"+q)} ${t({H:"have",D:"per_day"}[k])}"></td>`).join("")}</tr>`}
+ h+=`<tr><td>${t("forge")}</td><td><input id="m_forgeH" class="num" type="text" inputmode="numeric" aria-label="${t("forge")}"></td><td></td><td></td></tr></tbody>`;
+ $("matTable").innerHTML=h;
+ let r=`<thead><tr><th>${t("entry")}</th><th>${t("have")}</th><th>${t("per_reset")}</th><th>${t("buys")}</th><th>${t("gives")}</th></tr></thead><tbody>`;
+ for(const [e,m] of ENTRIES)r+=`<tr><td>${t(e)}</td><td><input id="r_${e}H" class="num" type="text" inputmode="numeric" aria-label="${t(e)}"></td><td><input id="r_${e}D" class="num" type="text" inputmode="numeric" value="5" aria-label="${t(e)} ${t("per_reset")}"></td><td><input id="r_${e}B" type="number" min="0" max="${BUY_MAX}" step="1" inputmode="numeric" value="0" aria-label="${t(e)} ${t("buys")}"></td><td class="small" id="y_${e}"></td></tr>`;
+ $("realmTable").innerHTML=r+"</tbody>";
+ let k=`<thead><tr><th>${t("pack")}</th><th>${t("pack_gives")}</th><th>${t("pack_buy")}</th></tr></thead><tbody>`;
+ for(const pk of PACKS)k+=`<tr><td>${t("pk_"+pk.id)}<div class="small">${t(pk.every==="day"?"pk_day":"pk_week")}</div></td><td class="small">${Object.entries(pk.give).map(([m,q])=>`${fmt(q)} ${t(m)}`).join("<br>")}</td><td><input id="pk_${pk.id}" type="number" min="0" step="1" inputmode="numeric" value="0" aria-label="${t("pk_"+pk.id)}"><div class="small" id="pkmax_${pk.id}"></div></td></tr>`;
+ $("packTable").innerHTML=k+"</tbody>";
+}
+
+function buildTabs(){
+ $("tabs").innerHTML=TABS.map((k,i)=>`<button type="button" role="tab" data-go="${k}">${i?i+". ":""}${t("tab_"+k)}<span class="dot" id="dot-${k}" hidden></span></button>`).join("");
+ for(const b of $("tabs").children)b.addEventListener("click",()=>setTab(b.dataset.go));
+}
+function setTab(k,scroll=true){
+ tab=k;
+ for(const b of $("tabs").children)b.setAttribute("aria-selected",b.dataset.go===k);
+ for(const el of document.querySelectorAll(".inputs>[data-tab]"))el.hidden=el.dataset.tab!==k;
+ renderBanner();
+ document.querySelector("[data-tab-host]").dataset.tab=k;
+ const i=TABS.indexOf(k),nx=TABS[i+1],pv=TABS[i-1];
+ $("nextBar").hidden=k==="goal";$("toNext").hidden=!nx;if(nx)$("toNext").textContent=t("next_tab",{t:t("tab_"+nx)});
+ $("toPrev").textContent=t("prev_tab",{t:t("tab_"+pv)});
+ $("toPlan").hidden=!!nx;
+ renderMissing();
+ if(scroll)window.scrollTo({top:0});
+ save();
+}
+// Fields the calculation needs; blank ones are listed on the goal tab so nothing is forgotten.
+function missingFields(){
+ const miss={},add=(k,l)=>(miss[k]=miss[k]||[]).push(l);
+ if(mode==="remaining"?!has("remDays")&&!has("remHours"):mode==="exact"?!has("endExact"):!has("seasonStart")||!seasonDays(Number($("season").value)||1))add("time",t(mode==="remaining"?"mode_remaining":mode==="exact"?"end_exact":"start_date"));
+ for(const [id,k] of [["charLv","char_lv"],["charXp","char_xp"],["xpHr","xp_hr"]])if(!has(id))add("char",t(k));
+ for(const g of GROUPS)if(!has(g.key+"C0"))add("levels",t(g.key));
+ for(const m of MATS){if(!qHas(m,"H"))add("mat",`${t(m)} (${t("have")})`);if(!qHas(m,"R"))add("mat",`${t(m)} (${t("per_hour")})`)}
+ if(!has("m_forgeH"))add("mat",t("forge"));
+ for(const [e] of ENTRIES)if(!has("r_"+e+"H"))add("realm",t(e));
+ return miss;
+}
+function renderMissing(){
+ const miss=missingFields(),keys=TABS.filter(k=>miss[k]),box=$("missingBox");
+ for(const k of TABS)$("dot-"+k).hidden=!miss[k];
+ box.hidden=!keys.length;$("readyBox").hidden=!!keys.length;
+ const steps=TABS.length-1,done=steps-keys.length,fb=$("fillBtn");
+ // shortcut to the first step that still has blanks
+ fb.hidden=!keys.length;if(keys.length){fb.dataset.go=keys[0];fb.textContent=keys.length<TABS.length-2?t("fill_more",{t:t("tab_"+keys[0])}):t("fill_start")}
+ $("progressLine").textContent=t("progress",{n:done,m:steps});
+ const st=$("stepStat");
+ $("toNext").classList.toggle("primary",!miss[tab]);
+ if(tab!=="goal"){st.className="stepstat "+(miss[tab]?"bad":"ok");st.textContent=miss[tab]?t("step_miss",{f:miss[tab].join(", ")}):t(tab==="paid"?"step_ok_paid":"step_ok")}
+ box.innerHTML=keys.length?`<p><b>${t("miss_head")}</b></p><ul>${keys.map(k=>`<li><button type="button" class="link" data-go="${k}">${t("tab_"+k)}</button>: ${miss[k].join(", ")}</li>`).join("")}</ul><p class="small">${t("miss_why")}</p>`:"";
+ for(const b of box.querySelectorAll("[data-go]"))b.addEventListener("click",()=>setTab(b.dataset.go));
+}
+function allInputs(){return [...document.querySelectorAll(".inputs input,.inputs select")].filter(e=>e.id)}
+// Groups shown in blocks of 4: relics by element, skills by type.
+function subs(g){return g.key==="relic"?t("group_hint").relic_el:g.key==="skill"?t("skill_sub"):null}
+// The "All" boxes show the shared level when every slot they fill matches, blank when they differ.
+function syncElAll(){const show=(b,ids)=>{if(!b||b===document.activeElement)return;const v=ids.map(id=>$(id).value);b.value=v.every(x=>x===v[0])?v[0]:""};
+ for(const g of GROUPS)for(const k of "CP")show($(g.key+"All"+k),[...Array(g.count).keys()].map(i=>g.key+k+i));
+ for(const g of GROUPS){const sb=subs(g);if(sb)for(const k of "CP")sb.forEach((_,e)=>show($(g.key+k+"E"+e),[0,1,2,3].map(j=>g.key+k+(e*4+j))))}}
+// Game rule: the 3 secondary Fantomons can't be above the main one (the left slot).
+function fantCap(k){const m=$("fant"+k+"0").value;if(m==="")return;for(let i=1;i<4;i++){const x=$("fant"+k+i);if(x.value!==""&&+x.value>+m)x.value=m}}
+function save(){
+ try{const d={lang,mode,tab,first:firstRun,ex:showExample,endAt:lastEnd&&!missingFields().time?lastEnd.toISOString():null,v:{}};for(const el of allInputs())d.v[el.id]=el.type==="checkbox"?el.checked:el.value;localStorage.setItem(STORE,JSON.stringify(d))}catch(e){}
+}
+function load(){
+ try{const raw=localStorage.getItem(STORE);return raw?JSON.parse(raw):null}catch(e){return null}
+}
+function applyValues(v){for(const id in v){const el=$(id);if(!el)continue;if(el.type==="checkbox")el.checked=!!v[id];else el.value=v[id]}}
+function applyExample(){
+ const e=EXAMPLE;
+ Object.assign($("season"),{value:e.season});$("resetTime").value=e.resetTime;$("boost").value=e.boost;
+ const end=new Date(e.endExact),left=Math.max(0,(end-Date.now())/36e5);
+ $("endExact").value=e.endExact;$("remDays").value=Math.floor(left/24);$("remHours").value=Math.floor(left%24);
+ $("crystals").value=e.crystals;$("saveExp").checked=e.saveExp;$("saveHours").value=36;$("charLv").value=e.charLv;$("charXp").value=e.charXp;$("xpHr").value=e.xpHr;$("bedXp").value=e.bedXp;
+ for(const g of GROUPS){const [c,p]=e.all[g.key];$(g.key+"AllC").value=c;$(g.key+"AllP").value=p;for(let i=0;i<g.count;i++){$(g.key+"C"+i).value=c;$(g.key+"P"+i).value=p}}
+ for(const m of MATS){const [h,r,d]=e.mat[m];$("m_"+m+"H").value=h;$("m_"+m+"R").value=r;$("m_"+m+"D").value=d}
+ $("m_forgeH").value=e.forge;
+ for(const [k]of ENTRIES){const [h,d,b]=e.realm[k];$("r_"+k+"H").value=h;$("r_"+k+"D").value=d;$("r_"+k+"B").value=b}
+ $("primoHave").value=e.primoHave;$("primoTarget").value=e.primoTarget;$("pass").value=e.pass;
+}
+function toLocalInput(d){const p=x=>String(x).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`}
+
+// ---------- time ----------
+function resetAtOrAfter(t0,h,m){const c=new Date(t0);c.setHours(h,m,0,0);if(c<t0)c.setDate(c.getDate()+1);return c}
+function countResets(a,b,h,m){if(!(b>a))return 0;const c=resetAtOrAfter(a,h,m);if(c<=a)c.setDate(c.getDate()+1);let k=0;while(c<b&&k<5000){k++;c.setDate(c.getDate()+1)}return k}
+function seasonEnd(now,h,m){
+ if(mode==="exact"){const d=new Date($("endExact").value);return isFinite(d)?d:now}
+ if(mode==="start"){
+  // season end = start date + season length, at the daily reset
+  const v=$("seasonStart").value,len=seasonDays(Number($("season").value)||1);
+  if(!v||!len)return now;
+  const [y,mo,d]=v.split("-").map(Number);return new Date(y,mo-1,d+len,h,m);
+ }
+ // The game countdown drops the minutes, so the real end is the first reset at or after (shown time − 59 min).
+ if(!remEnd){const cand=new Date(now.getTime()+(n("remDays")*24+n("remHours"))*36e5-59*6e4);remEnd=resetAtOrAfter(cand,h,m)}
+ return new Date(remEnd);
+}
+
+// ---------- step costs ----------
+function gearStep(R,L){const b=L-R.floor;if(b<1)return 0;if(b>300||R.gearBase===undefined)return null;return Math.round((R.gearBase+(Math.min(b,150)-1)*R.gearRate)/5)*5}
+function skillStep(R,s,L){const b=L-R.floor;if(b<1)return 0;if(b>(s<=2?150:180)||R.skillBase===undefined)return null;return Math.round((R.skillBase+(b-1)*R.skillRate)/5)*5}
+function fantStep(R,s,L){const b=L-R.floor;if(b<1)return 0;const x=FANTXP[s]?.[b-1];return x>0?x:null}
+function relicStep(R,s,L){const b=L-R.relicBase;if(b<1)return 0;if(b>(s<=2?15:18)||R.relicBaseCost===undefined)return null;const a=R.relicBaseCost+(b-1)*R.relicRate;return R.relicTier==="blue"?a*5:a*25}
+function capsAt(s,lv){
+ if(s===2){let row=S2CAPS[0];for(const c of S2CAPS)if(lv>=c.level)row=c;return row}
+ if(s===1)return {relic:lv<100?10:Math.max(10,Math.floor(lv/10)+1)};
+ return {};
+}
+
+function calc(){
+ syncElAll();
+ const daily=$("useDaily").checked;$("matTable").classList.toggle("nodaily",!daily);$("colDayLi").hidden=!daily;
+ const s=Number($("season").value)||1,R=RULES[s],warns=[];
+ const [rh,rm]=($("resetTime").value||"09:00").split(":").map(Number);
+ const now=new Date(),end=seasonEnd(now,rh||0,rm||0);lastEnd=end;
+ const realH=Math.max(0,(end-now)/36e5);
+ if(end<=now)warns.push(t("w_ended"));
+ const resets=countResets(now,end,rh||0,rm||0),boost=Math.max(0,n("boost"));
+ const crystalH=n("crystals")*2; // in-game text: "2 hours of resources based on your Cart and Bed levels"
+ if(n("saveHours")>36)$("saveHours").value=36;
+ const saving=$("saveExp").checked,saveH=saving?Math.min(36,n("saveHours"),realH):0;
+ // Cart and Bed both stop being claimed for the last saveH hours; reset boosts and crystals stay usable
+ const matH=realH-saveH+resets*boost+crystalH;
+ const xpH=matH;
+ const passMode=$("pass").value||"none",passMul=passMode==="buy"?1+PASS:1;
+ const xpHr=n("xpHr")*passMul;
+ // packs: clamp to what the shop still allows before the end
+ packGive={};const packs=[];
+ for(const pk of PACKS){
+  const max=packMax(pk,now,end,rh||0,rm||0),el=$("pk_"+pk.id);
+  if(intv(el)>max)el.value=max;
+  const k=intv(el);packs.push({...pk,left:max-k});
+  $("pkmax_"+pk.id).textContent=t("pk_max",{n:max});
+  for(const m in pk.give)packGive[m]=(packGive[m]||0)+pk.give[m]*k;
+ }
+
+ // character
+ const table=CHARXP[s];let lv=n("charLv")||R.floor,xp=n("charXp"),frac=0;
+ if(!table){warns.push(t("w_noxp",{s}))}
+ else{
+  if(lv<R.floor){warns.push(t("w_below",{f:R.floor}));lv=R.floor;xp=0}
+  // EXP waiting in the Bed counts too, unless we're already inside the reserve window (then it's part of the reserve)
+  const inReserve=saving&&realH<=Math.min(36,n("saveHours"));
+  let pool=xp+xpH*xpHr+(inReserve?0:n("bedXp"));
+  for(let g=0;g<1000;g++){const need=table[lv-R.floor];if(!need){warns.push(t("w_table",{s,l:lv}));pool=0;break}if(pool>=need){pool-=need;lv++}else{frac=pool/need;break}}
+ }
+ const charLv=Math.max(0,lv-R.floor),charPts=lv>=R.floor?charLv*R.charW+Math.floor(frac*R.charW+1e-9):0;
+
+ // groups
+ const curs={},sup={},caps=capsAt(s,lv),rows=[],need={ore:0,rola:0,essence:0,sand:0,treats:0,forge:0},unknown={};
+ rows.push({k:"char",lv:charLv+frac,w:R.charW,p:charPts});
+ for(const g of GROUPS){
+  const fl=R[g.floor],cf=R[g.costFloor],cap=caps[g.key];let lvls=0,capped=false,atCap=cap!==undefined;
+  curs[g.key]=[];
+  for(let i=0;i<g.count;i++){
+   const cur=has(g.key+"C"+i)?n(g.key+"C"+i):fl;curs[g.key].push(cur);
+   let tar=Math.max(cur,has(g.key+"P"+i)?n(g.key+"P"+i):cur); // a goal below the current level can't lower it
+   if(cap!==undefined&&tar>cap){tar=Math.max(cur,cap);capped=true}
+   if(cap!==undefined&&tar<cap)atCap=false;
+   lvls+=Math.max(0,tar-fl);
+   for(let L=Math.max(cur,cf)+1;L<=tar;L++){
+    let c;
+    if(g.key==="gear"){c=gearStep(R,L);if(c!==null){need.ore+=c;need.rola+=c*2;if((L-R.floor)%5===0&&L>R.floor)need.forge+=R.forgeStone||0}}
+    else if(g.key==="skill"){c=skillStep(R,s,L);if(c!==null)need.essence+=c}
+    else if(g.key==="fant"){c=fantStep(R,s,L);if(c!==null)need.treats+=c}
+    else{c=relicStep(R,s,L);if(c!==null)need.sand+=c}
+    if(c===null)unknown[g.key]=true;
+   }
+  }
+  if(capped)warns.push(t("w_cap",{g:t(g.key),c:(g.key==="relic"?"+":"Lv")+cap}));
+  if(unknown[g.key])warns.push(t("w_cost",{g:t(g.key)}));
+  rows.push({k:g.key,lv:lvls,w:R[g.w],p:lvls*R[g.w],atCap});
+  const btn=$(g.key+"Cap");
+  if(cap!==undefined){btn.hidden=false;btn.dataset.cap=cap;btn.textContent=t("fill_cap",{c:(g.key==="relic"?"+":"Lv")+cap})}else{btn.hidden=true;btn.dataset.cap=""}
+  $("hint-"+g.key).textContent=t("group_hint")[g.key].replace("{w}",R[g.w]).replace("{f}",fl);
+ }
+ if(s===1)warns.push(t("w_s1caps"));
+ $("charHint").textContent=t("char_floor",{s,f:R.floor});
+
+ // supply
+ const yields=REALM[s]?.[(Number($("realmRank").value)||3)-1];
+ const ex=Math.max(1,n("expTreat"));
+ const matRows=[],passiveOf={};
+ for(const m of ["ore","rola","essence","sand","treats"]){
+  let passive=qv(m,"H")+qv(m,"R")*matH*passMul+qv(m,"D")*resets;
+  if(m==="treats")passive*=ex;
+  passive+=packGive[m]||0;passiveOf[m]=passive;
+  const nd=need[m];let status,cls;
+  const ent=ENTRIES.find(e=>e[1]===m);
+  let total=passive;
+  if(nd<=passive){status=t("st_ok");cls="ok"}
+  else if(ent&&yields){
+   const y=yields[["ore","rola","essence","sand"].indexOf(m)],avail=entriesAvail(ent[0],resets);
+   const want=Math.ceil((nd-passive)/y);
+   if(want<=avail){status=t("st_entries",{n:fmt(want),m:fmt(avail)});cls="ok";total=passive+want*y}
+   else{total=passive+avail*y;status=t("st_short",{n:fmt(nd-total)});cls="bad"}
+  }else{status=t("st_short",{n:fmt(nd-passive)});cls="bad"}
+  matRows.push({m,nd,total,status,cls});
+  sup[m]=passive+(ent&&yields?entriesAvail(ent[0],resets)*yields[["ore","rola","essence","sand"].indexOf(m)]:0);
+ }
+ // what the monthly pass adds (or would add) until the end
+ const gain=x=>fmt(x*PASS);
+ const passVals={xp:gain(xpH*n("xpHr")),ore:gain(n("m_oreR")*matH),rola:gain(n("m_rolaR")*matH),essence:gain(n("m_essenceR")*matH),sand:gain(qv("sand","R")*matH)};
+ $("passHint").textContent=t("pass_hint_"+passMode,passVals);
+ for(const [e,m] of ENTRIES){const i=["ore","rola","essence","sand"].indexOf(m);$("y_"+e).textContent=yields?`${fmt(yields[i])} ${t(m==="sand"?"sand":m)}`:t("st_unknown")}
+
+ // stars
+ const score=rows.reduce((a,r)=>a+r.p,0);
+ const fromScore=Math.floor(score/R.perStar),have=n("primoHave"),total=have+fromScore+R.fixed;
+ // S1 has no past seasons: a number here is almost surely the Progress count, counted twice. Shown right under the field.
+ $("haveWarn").hidden=!(s===1&&have>0);if(s===1&&have>0)$("haveWarn").textContent=t("w_have_s1",{h:fmt(have)});
+ const target=n("primoTarget");
+ const wantSave=saving?Math.min(36,n("saveHours")):0,saveStart=new Date(end.getTime()-wantSave*36e5);
+ const freeEntries={},buys={};
+ for(const [e] of ENTRIES){buys[e]=intv($("r_"+e+"B"));freeEntries[e]=n("r_"+e+"H")+n("r_"+e+"D")*resets+(packGive[e]||0)}
+ lastCtx={s,R,charPts:rows[0].p,lv,curLv:n("charLv"),caps,curs,sup,forgeHave:n("m_forgeH")+(packGive.forge||0),forgeKnown:has("m_forgeH"),have,target,yields,resets,packs,passMode,
+  passive:passiveOf,freeEntries,buys,saving,wantSave,saveStart,now,end,crystals:n("crystals")};
+ renderMissing();
+ lastO={s,R,end,now,realH,resets,crystalH,wantSave,saveStart,matH,xpH,saveH,xpHr,lv,frac,rows,score,fromScore,have,total,target,matRows,need,warns,table,forgeHave:lastCtx.forgeHave};
+ render(lastO);
+ save();
+ if(!altBusy){clearTimeout(svTimer);svTimer=setTimeout(updateSaved,250)}
+}
+
+// ---------- plan suggestion ----------
+// One target level per category (slots below it are raised to it), costed with the same step tables as calc().
+function suggestPlan(){
+ const c=lastCtx;if(!c)return null;
+ const {s,R,caps}=c,mats=["ore","rola","essence","sand","treats"];
+ const limit={};
+ for(const g of GROUPS){
+  let cap=caps[g.key];
+  // Season 1: conservative caps from Avalon's calculator (unconfirmed)
+  if(s===1&&g.key==="skill")cap=Math.max(...c.curs.skill,c.curLv);
+  if(s===1&&g.key==="fant")cap=Math.max(...c.curs.fant,Math.floor(c.curLv/10)*10+10);
+  limit[g.key]=Math.max(cap??Math.max(...c.curs[g.key])+60,Math.min(...c.curs[g.key])); // at least one option even if a slot is already past the cap
+ }
+ const opts={};
+ for(const g of GROUPS){
+  const cur=c.curs[g.key],fl=R[g.floor],cf=R[g.costFloor],list=[];
+  const cost={ore:0,rola:0,essence:0,sand:0,treats:0,forge:0};
+  const lo=Math.min(...cur);
+  for(let tg=lo;tg<=limit[g.key];tg++){
+   let known=true;
+   if(tg>lo){
+    for(const cu of cur){
+     if(tg<=Math.max(cu,cf))continue;
+     let st;
+     if(g.key==="gear"){st=gearStep(R,tg);if(st!==null){cost.ore+=st;cost.rola+=st*2;if((tg-R.floor)%5===0&&tg>R.floor)cost.forge+=R.forgeStone||0}}
+     else if(g.key==="skill"){st=skillStep(R,s,tg);if(st!==null)cost.essence+=st}
+     else if(g.key==="fant"){st=fantStep(R,s,tg);if(st!==null)cost.treats+=st}
+     else{st=relicStep(R,s,tg);if(st!==null)cost.sand+=st}
+     if(st===null){known=false;break}
+    }
+   }
+   if(!known)break;
+   const pts=cur.reduce((a,cu)=>a+Math.max(0,Math.max(cu,tg)-fl),0)*R[g.w];
+   list.push({t:tg,pts,cost:{...cost}});
+  }
+  opts[g.key]=list;
+ }
+ const starsOf=score=>c.have+Math.floor(score/R.perStar)+R.fixed;
+ // Each category spends its own materials (gear: ore+rola+forge, skill: essence, fant: treats, relic: sand),
+ // so cost and feasibility are per category and pairs merge on a Pareto front instead of a 4-deep loop.
+ const MAT_OF={gear:["ore","rola"],skill:["essence"],fant:["treats"],relic:["sand"]};
+ for(const g of GROUPS)for(const o of opts[g.key]){
+  let use=0,def=0,ok=true;
+  for(const m of MAT_OF[g.key]){const nd=o.cost[m],sp=c.sup[m];if(nd>sp+1e-6){ok=false;def+=(nd-sp)/Math.max(1,sp)}else if(nd>0)use+=nd/Math.max(1,sp)}
+  if(g.key==="gear"&&c.forgeKnown&&o.cost.forge>c.forgeHave){ok=false;def+=(o.cost.forge-c.forgeHave)/Math.max(1,c.forgeHave)}
+  Object.assign(o,{use,def,ok});
+ }
+ // front: for each score, the cheapest way to reach at least that score (sorted by pts descending, val strictly falling)
+ const front=list=>{list.sort((x,y)=>y.pts-x.pts||x.val-y.val);const f=[];for(const e of list)if(!f.length||e.val<f[f.length-1].val-1e-12)f.push(e);return f};
+ const pair=(A,B,key,okOnly)=>{const l=[];for(const x of A)if(!okOnly||x.ok)for(const y of B)if(!okOnly||y.ok)l.push({pts:x.pts+y.pts,val:x[key]+y[key],pick:[x,y]});return front(l)};
+ const cheapest=(key,okOnly,needPts)=>{
+  const AB=pair(opts.gear,opts.skill,key,okOnly),CD=pair(opts.fant,opts.relic,key,okOnly);
+  let win=null;
+  for(const ab of AB){
+   // CD is sorted by pts descending: the last entry still >= the remaining pts is the cheapest one
+   let lo=0,hi=CD.length-1,k=-1;
+   while(lo<=hi){const mid=(lo+hi)>>1;if(CD[mid].pts>=needPts-ab.pts){k=mid;lo=mid+1}else hi=mid-1}
+   if(k<0)continue;
+   const v=ab.val+CD[k].val;
+   if(!win||v<win.v-1e-12)win={v,picks:[...ab.pick,...CD[k].pick]};
+  }
+  return win&&win.picks;
+ };
+ const build=picks=>{const [a,b,e,d]=picks,need={};
+  for(const m of mats)need[m]=a.cost[m]+b.cost[m]+e.cost[m]+d.cost[m];
+  const stars=starsOf(c.charPts+a.pts+b.pts+e.pts+d.pts);
+  return {plan:{gear:a.t,skill:b.t,fant:e.t,relic:d.t},parts:{gear:a.cost,skill:b.cost,fant:e.cost,relic:d.cost},stars,score:c.charPts+a.pts+b.pts+e.pts+d.pts,use:a.use+b.use+e.use+d.use,deficit:a.def+b.def+e.def+d.def,need,forge:a.cost.forge}};
+ const maxPts=GROUPS.reduce((acc,g)=>acc+Math.max(...opts[g.key].map(o=>o.pts)),0);
+ const maxPossible=starsOf(c.charPts+maxPts);
+ // most stars with what you'll have: each category at its highest affordable level (cheapest on ties)
+ const top=GROUPS.map(g=>opts[g.key].filter(o=>o.ok).reduce((x,y)=>!x||y.pts>x.pts||(y.pts===x.pts&&y.use<x.use)?y:x,null));
+ if(top.some(x=>!x))return null;
+ let best={...build(top),reach:false};
+ // same stars for less material: drop levels that don't add a whole star
+ const lean=cheapest("use",true,(best.stars-c.have-R.fixed)*R.perStar-c.charPts);
+ if(lean)best={...build(lean),reach:false};
+ if(c.target>0){
+  const needPts=(c.target-c.have-R.fixed)*R.perStar-c.charPts;
+  const r=cheapest("use",true,needPts);
+  if(r)best={...build(r),reach:true};
+  else if(best.stars>=c.target)best.reach=true;
+  if(!best.reach){const st=cheapest("def",false,needPts);best.stretch=st?build(st):null}
+ }
+ if(best.reach)best.stretch=null;
+ best.maxPossible=maxPossible;
+ best.base=c.charPts+GROUPS.reduce((a,g)=>a+opts[g.key][0].pts,0); // raising nothing
+ return best;
+}
+// Astral Pact milestones, read from the game's screens (5 to 860; higher ones aren't confirmed).
+// Stars carry over between seasons, so the Pact count is the season-end total. Rewards repeat in this order from 5.
+const PACT=(()=>{const a=[];let v=0;for(const [st,k] of [[5,8],[8,8],[12,8],[15,8],[20,8],[25,8],[30,6]])for(let i=0;i<k;i++)a.push(v+=st);return a})();
+const pactLast=x=>{let i=-1;while(i+1<PACT.length&&PACT[i+1]<=x)i++;return i}; // last milestone reached, -1 = none
+const pactName=i=>`${fmt(PACT[i])} (${t("pact_r")[i%8]})`;
+function pactLine(x){const i=pactLast(x),nx=PACT[i+1];
+ let h=i<0?t("pact_none",{p:pactName(0)}):t("pact_got",{p:pactName(i)});
+ h+=" "+(nx===undefined?t("pact_top"):t("pact_next",{p:pactName(i+1),d:fmt(nx-x)}));
+ if(i>=0&&x>PACT[i]&&nx!==undefined)h+=" "+t("pact_extra",{x:fmt(x-PACT[i])});
+ return `<p class="pactline">${h}</p>`}
+const rankLine=pl=>pl.score!==undefined?`<p class="small">${t("rank_line",{s:fmt(pl.score),d:fmt(pl.score-pl.base)})}</p>`:"";
+// what the goal you typed gets you in the Pact
+function renderPactNote(){
+ const T=n("primoTarget"),box=$("pactNote"),sel=document.querySelector(".pactPick");
+ sel.value=PACT.includes(T)?String(T):"";
+ box.hidden=!(T>0);if(box.hidden)return;
+ const i=pactLast(T),last=PACT[PACT.length-1],tt=fmt(T);let h,btns=[];
+ if(T>last)h=t("pn_top");
+ else if(i>=0&&PACT[i]===T)h=t("pn_hit",{t:tt,r:t("pact_r")[i%8],k:i+1});
+ else{h=t("pn_miss",{t:tt})+" "+(i>=0?t("pn_both",{p:pactName(i),q:pactName(i+1),d:fmt(PACT[i+1]-T),t:tt}):t("pn_first",{q:pactName(i+1)}))+(i>=0?" "+t("pn_keep",{t:tt}):"");
+  if(i>=0)btns.push(PACT[i]);btns.push(PACT[i+1])}
+ box.innerHTML=`<p>${h}</p>${btns.length?`<div class="btns">${btns.map(v=>`<button type="button" class="btn" data-goal="${v}">${t("pn_use",{n:fmt(v)})}</button>`).join("")}</div>`:""}`;
+}
+function setGoal(v){const el=$("primoTarget");el.value=v;el.dispatchEvent(new Event("input"))}
+$("pactNote").addEventListener("click",e=>{const b=e.target.closest("[data-goal]");if(b)setGoal(b.dataset.goal)});
+document.querySelector(".pactPick").addEventListener("change",e=>{if(e.target.value)setGoal(e.target.value)});
+// ponytail: what-ifs re-run calc() with some inputs changed, then restore them
+function altPlan(ch){const old={},pr=el=>el.type==="checkbox"?"checked":"value";altBusy=true;
+ for(const id in ch){const el=$(id);old[id]=el[pr(el)];el[pr(el)]=ch[id]}
+ try{calc();const r=suggestPlan();if(r)r.ctx=lastCtx;return r}
+ finally{for(const id in ch){const el=$(id);el[pr(el)]=old[id]}calc();altBusy=false}}
+// Scenario 3: spend only what you have saved today (inventory + saved Realm entries) and keep the rest.
+// No new production, quests, purchases or packs; the character keeps its normal EXP (reserve included).
+// suggestPlan already picks the least material for the most stars, so whatever it doesn't spend is a waste to spend.
+function savedScenario(){
+ const inv={primoTarget:"",useDaily:false};
+ for(const m of MATS)inv["m_"+m+"R"]="";
+ for(const [e] of ENTRIES)Object.assign(inv,{["r_"+e+"D"]:"0",["r_"+e+"B"]:"0"});
+ for(const pk of PACKS)inv["pk_"+pk.id]="0";
+ const p=altPlan(inv);if(!p)return null;
+ const k=p.ctx,R=k.R,IDX={ore:0,rola:1,essence:2,sand:3};
+ const lvPts=GROUPS.reduce((a,g)=>a+k.curs[g.key].reduce((b,cu)=>b+Math.max(0,Math.max(cu,p.plan[g.key])-R[g.floor]),0)*R[g.w],0);
+ const td=altPlan({...inv,xpHr:"",bedXp:"",crystals:"0"})?.ctx;
+ const rows=[];// spend from the inventory first, then saved entries
+ for(const m of MATS){const own=k.passive[m],nd=p.need[m],sp=Math.min(nd,own);if(own>0||nd>0)rows.push({name:t(m)+(m==="treats"?" (EXP)":""),spend:sp,own,keep:own-sp})}
+ if(k.forgeKnown&&(k.forgeHave>0||p.forge>0))rows.push({name:t("forge"),spend:p.forge||0,own:k.forgeHave,keep:Math.max(0,k.forgeHave-(p.forge||0))});
+ for(const [e,m] of ENTRIES){const own=k.freeEntries[e];if(!own)continue;const y=k.yields?.[IDX[m]];
+  const use=y?Math.min(own,Math.ceil(Math.max(0,p.need[m]-k.passive[m])/y)):0;rows.push({name:t(e),spend:use,own,keep:own-use})}
+ return {p,ctx:k,score:k.charPts+lvPts,today:td?k.have+Math.floor((td.charPts+lvPts)/R.perStar)+R.fixed:null,rows,
+  raise:GROUPS.some(g=>p.plan[g.key]>Math.min(...k.curs[g.key]))};
+}
+function spendTable(sv,own){const r=sv.rows.filter(x=>x.spend>0||x.keep>0);
+ return `<div class="scroll"><table class="tbl"><thead><tr><th>${t("mat")}</th><th>${t("spend")}</th>${own?`<th>${t("own")}</th>`:""}<th>${t("keep")}</th></tr></thead><tbody>${r.map(x=>`<tr><td>${x.name}</td><td>${fmt(x.spend)}</td>${own?`<td>${fmt(x.own)}</td>`:""}<td>${fmt(x.keep)}</td></tr>`).join("")}</tbody></table></div>`}
+// The panel's main number is scenario 3. It re-runs calc() with other inputs, so it runs after calc, never inside it.
+function updateSaved(){const c=lastCtx,g=missingFields();saved=!c||c.end<=c.now||g.char||g.levels?null:savedScenario();if(lastO)render(lastO)}
+function renderPlan(){
+ const passAlt=$("pass").value==="none"?altPlan({pass:"buy",primoTarget:""}):null;
+ const saveOn=$("saveExp").checked;
+ const maxNow=altPlan({primoTarget:""}),maxOther=altPlan({primoTarget:"",saveExp:!saveOn});
+ const sv=savedScenario();saved=sv;
+ const box=$("planBox"),c=lastCtx,p=suggestPlan();
+ if(!p){box.hidden=true;return}
+ box.hidden=false;
+ // without character or levels the plan means nothing; other gaps only get a warning
+ const gaps=missingFields();
+ if(c.end<=c.now){box.innerHTML=`<div class="verdict bad"><b>${t("pl_ended")}</b>${t("w_ended")}</div>`;return}
+ if(gaps.char||gaps.levels){box.innerHTML=`<div class="verdict bad"><b>${t("pl_blocked")}</b>${t("pl_blocked_sub")}</div>`;return}
+ const gapWarn=Object.keys(gaps).length?`<p class="stepstat bad">${t("pl_gaps")}</p>`:"";
+ const M5=["ore","rola","essence","sand","treats"],IDX={ore:0,rola:1,essence:2,sand:3};
+ const cur=k=>Math.min(...c.curs[k]),pre=k=>k==="relic"?"+":"Lv"; // lowest slot: the plan raises every slot below its target
+ const goal=c.target>0,hr=`<hr style="border:0;border-top:1px solid var(--line);width:100%;margin:6px 0">`;
+ const matName=m=>t(m)+(m==="treats"?" (EXP)":"");
+ const costTxt=cost=>[...M5.filter(m=>cost[m]>0).map(m=>`${fmt(cost[m])} ${matName(m)}`),...(cost.forge?[`${fmt(cost.forge)} ${t("forge")}`]:[])].join("<br>")||"–";
+ // what to level up, with the cost of each category
+ const upTable=pl=>{const rows=GROUPS.filter(g=>pl.plan[g.key]>cur(g.key)).map(g=>`<tr><td>${t(g.key)}</td><td>${pre(g.key)}${cur(g.key)} → ${pre(g.key)}${pl.plan[g.key]}</td><td>${costTxt(pl.parts[g.key])}</td></tr>`).join("");
+  return rows?`<div class="scroll"><table class="tbl"><thead><tr><th>${t("cat")}</th><th>${t("pl_levels")}</th><th>${t("pl_cost")}</th></tr></thead><tbody>${rows}</tbody></table></div>`:`<p>${t("pl_nothing")}</p>`};
+ // concrete actions until the end of the season
+ const todo=pl=>{const li=[];
+  for(const [e,m] of ENTRIES){const y=c.yields?.[IDX[m]];if(!y)continue;
+   const want=Math.max(0,Math.ceil((pl.need[m]-c.passive[m])/y)),extra=want-c.freeEntries[e];
+   if(!want){if(c.buys[e]>0)li.push(t("td_nobuy",{it:t(e)}));continue}
+   if(extra<=0)li.push(t("td_use",{n:fmt(want),it:t(e)}));
+   else li.push(t("td_buy",{n:fmt(want),it:t(e),k:Math.ceil(extra/(PER_BUY*Math.max(1,c.resets)))}));
+  }
+  if(pl.need.treats>0)li.push(t("td_feed",{n:fmt(pl.need.treats)}));
+  if(c.crystals>0)li.push(t("td_crystals",{n:c.crystals,end:dateStr(c.end)}));
+  if(c.saving&&c.wantSave)li.push(c.saveStart>c.now?t("td_reserve",{when:dateStr(c.saveStart),end:dateStr(c.end)}):t("td_reserve_now",{end:dateStr(c.end)}));
+  li.push(t("td_level"));
+  return `<ul class="todo">${li.map(x=>`<li>${x}</li>`).join("")}</ul>`};
+ // materials with this plan: need vs will have
+ const matTable=pl=>{const rows=M5.filter(m=>pl.need[m]>0).map(m=>{const d=c.sup[m]-pl.need[m];return `<tr><td>${matName(m)}</td><td>${fmt(pl.need[m])}</td><td>${fmt(c.sup[m])}</td><td><span class="chip ${d>=0?"ok":"bad"}">${t(d>=0?"pl_left":"pl_short",{n:fmt(Math.abs(d))})}</span></td></tr>`});
+  if(pl.forge){const d=c.forgeHave-pl.forge;rows.push(`<tr><td>${t("forge")}</td><td>${fmt(pl.forge)}</td><td>${c.forgeKnown?fmt(c.forgeHave):"?"}</td><td>${c.forgeKnown?`<span class="chip ${d>=0?"ok":"bad"}">${t(d>=0?"pl_left":"pl_short",{n:fmt(Math.abs(d))})}</span>`:t("pl_unknown")}</td></tr>`)}
+  return rows.length?`<div class="scroll"><table class="tbl"><thead><tr><th>${t("mat")}</th><th>${t("need")}</th><th>${t("will_have")}</th><th>${t("status")}</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`:""};
+ // why a category is missing from the plan: at its cap, or not worth a whole star
+ const skipped=pl=>{const li=GROUPS.filter(g=>!(pl.plan[g.key]>cur(g.key))).map(g=>{const cap=c.caps[g.key];
+   if(cap!==undefined&&cur(g.key)>=cap)return t("pl_skip_cap",{g:t(g.key),c:pre(g.key)+cap})+(c.s===1&&g.key==="relic"?t("pl_skip_relic1",{l:cap*10}):"");
+   return t("pl_skip_none",{g:t(g.key)})});
+  return li.length?`<ul class="small" style="margin:6px 0 0;padding-left:18px">${li.map(x=>`<li>${x}</li>`).join("")}</ul>`:""};
+ const useBtn=id=>`<div><button type="button" class="btn primary" id="${id}">${t("plan_use")}</button></div>`;
+ const capsTxt=c.s===1?`<p class="small">${t("plan_caps1")}</p>`:"";
+  const changedOf=pl=>GROUPS.some(g=>pl.plan[g.key]>cur(g.key));
+  const full=(pl,id)=>changedOf(pl)?`<h4>${t("pl_h_up")}</h4>${upTable(pl)}${skipped(pl)}<h4>${t("pl_h_todo")}</h4>${todo(pl)}<h4>${t("pl_h_mat")}</h4>${matTable(pl)}${useBtn(id)}`:`<p>${t("pl_nothing")}</p>${skipped(pl)}`;
+  const head=(h,note)=>`<h3 class="sc">${h}</h3><p class="scnote">${note}</p>`;
+  // what's missing for the goal, and how to get it
+  const missList=st=>{
+  const miss=[];
+  for(const m of M5){
+   const short=st.need[m]-c.sup[m];if(short<=0)continue;
+   let how="";
+   const ent=ENTRIES.find(e=>e[1]===m);
+   if(ent&&c.yields){
+    const entries=Math.ceil(short/c.yields[IDX[m]]);
+    const perDay=c.resets>0?Math.ceil(entries/(PER_BUY*c.resets)):0;
+    const room=BUY_MAX-c.buys[ent[0]];
+    const pkM=c.packs.find(x=>x.every==="week"&&x.give[m]);
+    if(perDay>0&&perDay<=room){
+     how=t("miss_buy",{e:fmt(entries),it:t(ent[0]),k:perDay});
+     const k=pkM?Math.ceil(short/pkM.give[m]):0;
+     if(pkM&&k<=pkM.left)how+="; "+t("miss_pack_or",{k,p:t("pk_"+pkM.id)});
+    }else{
+     how=t("miss_entries",{e:fmt(entries),it:t(ent[0])});
+     const rest=short-room*PER_BUY*c.resets*c.yields[IDX[m]];
+     if(!pkM)how+="; "+t("miss_nopack");
+     else{const k=Math.ceil(rest/pkM.give[m]);how+="; "+(k<=pkM.left?t("miss_pack_ok",{k,p:t("pk_"+pkM.id)}):t("miss_pack_no",{k,p:t("pk_"+pkM.id),l:pkM.left}))}
+    }
+   }else if(m==="treats")how=t("miss_treats",{b:fmt(Math.ceil(short/2000))});
+   miss.push(`<li>${matName(m)}: <b>${fmt(short)}</b>${how?` — ${how}`:""}</li>`);
+  }
+  if(c.forgeKnown&&st.forge>c.forgeHave){const sh=st.forge-c.forgeHave,pk=c.packs.find(x=>x.id==="forja"),k=Math.ceil(sh/pk.give.forge);miss.push(`<li>${t("forge")}: <b>${fmt(sh)}</b> — ${k<=pk.left?t("miss_pack_ok",{k,p:t("pk_forja")}):t("miss_pack_no",{k,p:t("pk_forja"),l:pk.left})}</li>`)}
+   return miss};
+  let html=gapWarn+`<p>${t("pl_intro3")}</p>`;
+  // 1. your goal
+  html+=head(t("sc1_h"),t("sc1_note"));
+  if(!goal)html+=`<p>${t("sc1_none")}</p>`;
+  else if(p.reach)html+=`<div class="verdict ok"><b>${t("v_reach",{t:fmt(c.target)})}</b>${t("v_reach_sub",{n:fmt(p.stars)})}</div>`+pactLine(p.stars)+rankLine(p)+full(p,"usePlan");
+  else html+=`<div class="verdict bad"><b>${t("v_no",{t:fmt(c.target)})}</b>${t("sc1_no_sub",{n:fmt(p.stars)})}</div>`+(p.stretch?`<p>${t("pl_more_intro")}</p>${upTable(p.stretch)}<p>${t("plan_missing")}</p><ul class="todo">${missList(p.stretch).join("")}</ul>${useBtn("useStretch")}`:`<p>${t("plan_capped",{t:fmt(c.target),n:fmt(p.maxPossible)})}</p>`);
+  // 2. realistic goal: the most with everything you'll get until the end
+  const real=goal&&p.reach&&maxNow?maxNow:p;
+  html+=hr+head(t("sc2_h"),t("sc2_note"))+`<div class="verdict ok"><b>${t("v_max",{n:fmt(real.stars)})}</b></div>`+pactLine(real.stars)+rankLine(real)+full(real,"useMax");
+  // 3. spend what you have saved today, keep the rest for next season
+  html+=hr+head(t("sc3_h"),t("sc3_note",{r:sv&&sv.ctx.saving&&sv.ctx.wantSave?t("pl_now_res"):""}));
+  if(sv){
+   html+=`<div class="verdict ok"><b>${t("sc3_v",{n:fmt(sv.p.stars)})}</b>${sv.raise&&sv.today!==null?t("sc3_today",{n:fmt(sv.today)}):""}${t("sc3_lv",{lv:sv.ctx.lv})}</div>`+pactLine(sv.p.stars)+rankLine(sv.p);
+   html+=sv.raise?`<p>${t("pl_now_how")}</p>${upTable(sv.p)}<h4>${t("pl_h_spend")}</h4>${spendTable(sv,true)}<p class="small">${t("pl_spend_note")}</p>${useBtn("useNow")}`:`<p>${t("pl_now_none")}</p>`;
+  }
+ // monthly pass and 36 h reserve
+ const extras=[];
+ if(passAlt&&maxNow&&passAlt.stars>maxNow.stars)extras.push(`<h4>${t("pass")}</h4><p>${t("plan_pass",{n:fmt(passAlt.stars),m:fmt(maxNow.stars)})}</p>`);
+ if(maxNow&&maxOther){
+  const diff=saveOn?maxOther.stars-maxNow.stars:maxNow.stars-maxOther.stars;
+  const key=saveOn?(diff>0?"res_keep_cost":"res_keep_free"):(diff>0?"res_spend_cost":"res_spend_free");
+  extras.push(`<h4>${t("res_head")}</h4><p>${t(key,{n:fmt(diff),s:fmt(saveOn?maxOther.stars:maxNow.stars)})}</p>`);
+ }
+ if(extras.length)html+=hr+extras.join("");
+ html+=capsTxt;
+ box.innerHTML=html;
+ const load=(id,plan)=>{const btn=$(id);if(!btn)return;btn.addEventListener("click",()=>{
+  for(const g of GROUPS){const tg=plan[g.key];$(g.key+"AllP").value=tg;for(let i=0;i<g.count;i++){const cu=has(g.key+"C"+i)?n(g.key+"C"+i):0;$(g.key+"P"+i).value=Math.max(cu,tg)}}
+  $("det-goals").open=true;
+  calc();btn.textContent=t("plan_used");btn.disabled=true;
+ })};
+ load("usePlan",p.plan);load("useMax",real.plan);if(p.stretch)load("useStretch",p.stretch.plan);if(sv)load("useNow",sv.p.plan);
+ render(lastO);
+}
+$("suggestBtn").addEventListener("click",renderPlan);
+$("toPlan").addEventListener("click",()=>{setTab("goal",false);renderPlan();$("planBox").scrollIntoView({block:"start"})});
+$("toNext").addEventListener("click",()=>setTab(TABS[TABS.indexOf(tab)+1]));
+$("toPrev").addEventListener("click",()=>setTab(TABS[TABS.indexOf(tab)-1]));
+
+function dur(h){const d=Math.floor(h/24),hh=Math.floor(h%24),m=Math.floor((h*60)%60);return lang==="es"?`${d} d ${hh} h ${m} min`:`${d}d ${hh}h ${m}m`}
+function dateStr(d){return d.toLocaleString(lang==="es"?"es-VE":"en-US",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}
+
+function render(o){
+ const {R}=o;
+ const len=seasonDays(o.s);
+ $("modeHint").textContent=missingFields().time&&!(mode==="start"&&has("seasonStart"))?t("hint_need"):mode==="start"?(len?t("hint_start",{s:o.s,d:len,end:dateStr(o.end)}):t("hint_start_unknown",{s:o.s})):t(mode==="exact"?"hint_exact":"hint_remaining",{end:dateStr(o.end)});
+ const sh=$("saveHint");sh.hidden=!o.wantSave||o.end<=o.now;
+ if(!sh.hidden)sh.textContent=o.saveStart>o.now?t("save_when",{when:dateStr(o.saveStart),end:dateStr(o.end),h:o.wantSave}):t("save_now",{h:o.wantSave,end:dateStr(o.end)});
+ // main number = scenario 3 (spend what you have saved today); the plain total becomes the "if you raise nothing else" line
+ const sv=saved,heroTotal=sv?sv.p.stars:o.total,heroScore=sv?sv.score:o.score;
+ const own=GROUPS.some(g=>[...Array(g.count).keys()].some(i=>has(g.key+"P"+i)&&n(g.key+"P"+i)>n(g.key+"C"+i)));
+ const toNext=R.perStar-(heroScore%R.perStar);
+ let tgt="";
+ if(o.target>0){
+  const pct=Math.min(100,heroTotal/o.target*100);
+  if(heroTotal>=o.target)tgt=`<p>${t("target_ok",{t:fmt(o.target),n:fmt(heroTotal-o.target)})}</p>`;
+  else{
+   const miss=o.target-heroTotal,pts=Math.max(0,miss*R.perStar-(heroScore%R.perStar));
+   // skip a category that is already at its level cap: those points are out of reach
+   const capped=new Set(o.rows.filter(r=>r.atCap).map(r=>r.k));
+   const eq=[["eq_char",R.charW,"char"],["eq_gear",R.gearW,"gear"],["eq_skill",R.skillW,"skill"],["eq_fant",R.fantW,"fant"],["eq_relic",R.relicW,"relic"]].filter(x=>!capped.has(x[2])).map(([k,w])=>`<li>${t(k,{n:fmt(Math.ceil(pts/w))})}</li>`).join("");
+   tgt=`<p>${t("target_miss",{t:fmt(o.target),n:fmt(miss),p:fmt(pts)})}</p><ul class="small" style="margin:6px 0 0;padding-left:18px">${eq}</ul>`;
+  }
+  tgt=`<div class="target"><div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}"><i style="width:${pct}%"></i></div>${tgt}</div>`;
+ }
+ const parts=[`<li>${t("p_score",{n:`<b>${fmt(Math.floor(heroScore/R.perStar))}</b>`})}</li>`,`<li>${t("p_fixed",{n:`<b>${fmt(R.fixed)}</b>`})}</li>`];
+ if(o.have)parts.push(`<li>${t("p_have",{n:`<b>${fmt(o.have)}</b>`})}</li>`);
+ const scoreRows=o.rows.map(r=>`<tr><td>${t(r.k)}</td><td>${r.k==="char"?(Math.floor(r.lv*100)/100).toLocaleString(lang==="es"?"es-VE":"en-US"):fmt(r.lv)}</td><td>${r.w}</td><td>${fmt(r.p)}</td></tr>`).join("");
+ const matRows=o.matRows.filter(r=>r.nd>0).map(r=>`<tr><td>${t(r.m)}${r.m==="treats"?" <span class='small'>(EXP)</span>":""}</td><td>${fmt(r.nd)}</td><td>${fmt(r.total)}</td><td><span class="chip ${r.cls}">${r.status}</span></td></tr>`).join("");
+ const forge=o.need.forge?`<p class="small">${t("forge_note",{n:fmt(o.need.forge),h:fmt(o.forgeHave)})}</p>`:"";
+ $("ledger").innerHTML=`
+  <p class="lead">${t("lead")}</p>
+  <div class="hero">
+   <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="var(--star)" d="M24 2c1.6 11.2 5.4 17.6 22 22-16.6 4.4-20.4 10.8-22 22-1.6-11.2-5.4-17.6-22-22C18.6 19.6 22.4 13.2 24 2z"/></svg>
+   <div><div class="big">${fmt(heroTotal)}</div><div class="unit">${t("stars")}</div></div>
+  </div>
+  ${sv?`<p class="scnote">${t("hero_note",{r:sv.ctx.saving&&sv.ctx.wantSave?t("pl_now_res"):""})}${sv.raise&&sv.today!==null?" "+t("hero_today",{n:fmt(sv.today)}):""}</p>`:""}
+  ${pactLine(heroTotal)}
+  <ul class="parts">${parts.join("")}</ul>
+  <p class="small" style="margin:8px 0 0">${t("next_star",{n:fmt(toNext)})}</p>
+  ${tgt}
+  ${sv?`<h3>${t("pl_h_spend")}</h3>${sv.raise?spendTable(sv,false):`<p class="small">${t("pl_now_none")}</p>`}
+  <h3>${t(own?"alt_goals":"alt_none")}</h3><p class="alt"><b>${fmt(o.total)}</b> ${t("stars")}</p><p class="small" style="margin:2px 0 0">${t(own?"alt_note_goals":"alt_note_none")}</p>`:""}
+  <h3>${t("when")}</h3>
+  <dl class="kv">
+   <dt>${t("ends")}</dt><dd>${dateStr(o.end)}</dd>
+   <dt>${t("left")}</dt><dd>${dur(o.realH)}</dd>
+   <dt>${t("resets")}</dt><dd>${o.resets}</dd>
+   ${o.crystalH?`<dt>${t("crystal_h")}</dt><dd>${fmt(o.crystalH)} h</dd>`:""}
+   <dt>${t("prod_h")}</dt><dd>${fmt(o.matH)} h</dd>
+   <dt>${t("xp_h")}</dt><dd>${fmt(o.xpH)} h</dd>
+   ${o.wantSave&&o.saveStart>o.now?`<dt>${t("last_claim")}</dt><dd>${dateStr(o.saveStart)}</dd>`:""}
+   ${o.saveH?`<dt>${t("saved_xp")}</dt><dd>${fmt(o.saveH*o.xpHr)}</dd>`:""}
+   <dt>${t("char_proj")}</dt><dd>${o.table?t("lv",{l:o.lv,p:Math.floor(o.frac*100)}):"–"}</dd>
+  </dl>
+  <h3>${t("score")}${sv?` <span class="small">(${t(own?"score_goal":"score_cur")})</span>`:""}</h3>
+  <div class="scroll"><table class="tbl"><thead><tr><th>${t("cat")}</th><th>${t("lvls")}</th><th>${t("weight")}</th><th>${t("points")}</th></tr></thead>
+   <tbody>${scoreRows}</tbody><tfoot><tr><td>${t("total")}</td><td></td><td></td><td>${fmt(o.score)}</td></tr></tfoot></table></div>
+  ${matRows?`<h3>${t("materials")}</h3><div class="scroll"><table class="tbl"><thead><tr><th>${t("mat")}</th><th>${t("need")}</th><th>${t("will_have")}</th><th>${t("status")}</th></tr></thead><tbody>${matRows}</tbody></table></div>`:""}
+  ${forge}
+  ${o.warns.length?`<ul class="warns">${o.warns.map(w=>`<li>${w}</li>`).join("")}</ul>`:""}`;
+ $("sbarStars").textContent=fmt(heroTotal);
+ renderPactNote();
+ const li=pactLast(heroTotal);
+ $("pactTable").innerHTML=`<p class="small" style="margin:8px 0 0">${t("pact_intro",{n:fmt(heroTotal)})}</p><div class="scroll"><table class="tbl pacttbl"><thead><tr><th>${t("pact_stars")}</th><th>${t("pact_reward")}</th></tr></thead><tbody>${PACT.map((v,i)=>`<tr class="${i<=li?"got":i===li+1?"nx":""}"><td>${i<=li?"✓ ":""}${fmt(v)}</td><td>${t("pact_r")[i%8]}${i===li+1?` <span class="chip ok">${t("pact_next_tag")}</span>`:""}</td></tr>`).join("")}</tbody></table></div><p class="small">${t("pact_unconf")}</p>`;
+}
+
+function setLang(l){
+ const snapshot={};for(const el of allInputs())snapshot[el.id]=el.type==="checkbox"?el.checked:el.value;
+ const openDet=[...document.querySelectorAll("details[open]")].map(d=>d.id);
+ // keep raw digits so the separator switches with the language
+ for(const el of document.querySelectorAll("input.num"))snapshot[el.id]=el.value.replace(/\D/g,"");
+ lang=l;document.documentElement.lang=l;
+ for(const b of document.querySelectorAll(".lang button"))b.setAttribute("aria-pressed",b.dataset.lang===l);
+ buildStatic();buildGroups();buildTables();buildTabs();
+ applyValues(snapshot);
+ for(const id of openDet)$(id)&&($(id).open=true);
+ for(const el of document.querySelectorAll("[data-i18n]"))el.textContent=t(el.dataset.i18n);
+ for(const el of document.querySelectorAll("[data-i18n-alt]"))el.alt=t(el.dataset.i18nAlt);
+ for(const el of document.querySelectorAll("[data-step]"))el.textContent=t("step_n",{n:TABS.indexOf(el.dataset.step),m:TABS.length-1});
+ $("footer").innerHTML=t("footer");
+ document.title=t("name");
+ for(const el of document.querySelectorAll("input.num"))formatNumField(el);
+ wire();calc();setTab(tab,false);
+}
+function setMode(m){
+ if(m!==mode&&!missingFields().time){
+  const [rh,rm]=($("resetTime").value||"09:00").split(":").map(Number),now=new Date(),end=seasonEnd(now,rh||0,rm||0);
+  if(end>now){
+   const len=seasonDays(Number($("season").value)||1),p2=x=>String(x).padStart(2,"0");
+   if(m==="exact")$("endExact").value=toLocalInput(end);
+   if(m==="remaining"){const hl=(end-now)/36e5;$("remDays").value=Math.floor(hl/24);$("remHours").value=Math.floor(hl%24)}
+   if(m==="start"&&len){const st=new Date(end.getFullYear(),end.getMonth(),end.getDate()-len);$("seasonStart").value=`${st.getFullYear()}-${p2(st.getMonth()+1)}-${p2(st.getDate())}`}
+   mode=m;remEnd=m==="remaining"?end:null;
+  }
+ }
+ mode=m;if(m!=="remaining")remEnd=null;
+ $("remainingBox").hidden=m!=="remaining";$("exactBox").hidden=m!=="exact";$("startBox").hidden=m!=="start";
+ for(const b of document.querySelectorAll(".seg button"))b.setAttribute("aria-pressed",b.dataset.mode===m);
+ calc();
+}
+function wire(){
+ for(const el of allInputs()){
+  if(el.dataset.w)continue;el.dataset.w=1;
+  // Backspace/Delete next to a thousands separator would only remove the separator (and it comes back): skip over it
+  if(el.classList.contains("num"))el.addEventListener("keydown",e=>{
+   const i=el.selectionStart;if(i!==el.selectionEnd)return;
+   if(e.key==="Backspace"&&i>0&&/\D/.test(el.value[i-1]))el.setSelectionRange(i-1,i-1);
+   if(e.key==="Delete"&&i<el.value.length&&/\D/.test(el.value[i]))el.setSelectionRange(i+1,i+1);
+  });
+  el.addEventListener("input",()=>{if(el.classList.contains("num"))formatNumField(el);if(firstRun){firstRun=false;renderBanner()}if(["remDays","remHours","resetTime"].includes(el.id))remEnd=null;if(el.id==="saveExp")$("saveBox").hidden=!el.checked;calc()});
+  if(el.tagName==="SELECT"||el.type==="checkbox")el.addEventListener("change",()=>{$("saveBox").hidden=!$("saveExp").checked;calc()});
+ }
+ $("saveBox").hidden=!$("saveExp").checked;
+}
+
+// Destructive buttons need a second tap within 4 s (the viewer can't show confirm() dialogs)
+function armed(btn,idle,ask,act){let tm=null;btn.addEventListener("click",()=>{
+ if(!tm){btn.textContent=t(ask);btn.classList.add("armed");tm=setTimeout(()=>{tm=null;btn.textContent=t(idle);btn.classList.remove("armed")},4000);return}
+ clearTimeout(tm);tm=null;btn.textContent=t(idle);btn.classList.remove("armed");act()})}
+// back to the page's own defaults (reset time, 36 h, 5 quest entries...); selects keep their choice
+function clearInputs(els){for(const el of els){if(el.type==="checkbox")el.checked=el.id==="saveExp";else if(el.tagName!=="SELECT")el.value=el.defaultValue}$("saveBox").hidden=!$("saveExp").checked;$("planBox").hidden=true}
+function clearAll(){clearInputs(allInputs());showExample=false;firstRun=true;remEnd=null;setMode("remaining");renderBanner();calc()}
+armed($("clearBtn"),"clear","clear_confirm",clearAll);
+armed($("clearAllBtn"),"clear_all","clear_confirm",clearAll);
+armed($("clearTabBtn"),"clear_tab","clear_tab_confirm",()=>{
+ clearInputs(document.querySelectorAll(`.inputs [data-tab="${tab}"] input,.inputs [data-tab="${tab}"] select`));
+ if(tab==="time"){remEnd=null;setMode("remaining")}
+ calc()});
+for(const b of document.querySelectorAll(".lang button"))b.addEventListener("click",()=>setLang(b.dataset.lang));
+$("startBtn").addEventListener("click",()=>setTab("time"));
+$("fillBtn").addEventListener("click",()=>setTab($("fillBtn").dataset.go));
+$("exampleBtn").addEventListener("click",()=>{applyExample();showExample=true;firstRun=false;remEnd=null;setMode(EXAMPLE.mode);renderBanner()});
+for(const b of document.querySelectorAll(".seg button"))b.addEventListener("click",()=>setMode(b.dataset.mode));
+
+(function boot(){
+ const saved=load();
+ lang=saved?.lang||((navigator.language||"es").toLowerCase().startsWith("es")?"es":"en");
+ mode=saved?.mode||"remaining";tab=TABS.includes(saved?.tab)?saved.tab:"goal";
+ buildStatic();buildGroups();buildTables();buildTabs();
+ if(saved?.v){applyValues(saved.v);if(!("useDaily" in saved.v))$("useDaily").checked=Object.keys(saved.v).some(k=>/^m_.*D$/.test(k)&&saved.v[k])} // older saves: keep the extra column if it was used
+ else{$("saveExp").checked=true;firstRun=true} // first visit starts blank
+ if(saved?.v){firstRun=!!saved.first;showExample=!!saved.ex}
+ // "Time left" was typed on another day: rebuild it from the saved end so it keeps counting down.
+ const endAt=saved?.endAt&&new Date(saved.endAt);
+ // only when the player actually typed a time left (blank fields must stay blank)
+ const typed=saved?.v&&(String(saved.v.remDays??"").trim()!==""||String(saved.v.remHours??"").trim()!=="");
+ if(mode==="remaining"&&typed&&endAt&&isFinite(endAt)){const h=Math.max(0,(endAt-Date.now())/36e5);$("remDays").value=Math.floor(h/24);$("remHours").value=Math.floor(h%24);remEnd=endAt}
+ setLang(lang);setMode(mode);
+ setInterval(calc,60000); // keep the countdown fresh
+})();
+</script>
