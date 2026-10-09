@@ -170,10 +170,12 @@ h3.sc{font:600 17px var(--body);margin:6px 0 2px;color:var(--ink)}
 @media (max-width:520px){
   section.box:has(.plan){padding:12px}
   .plan{padding:10px}
-  .plan .tbl{table-layout:fixed}
-  .plan .tbl th,.plan .tbl td{text-align:left;padding:5px 4px;overflow-wrap:break-word;hyphens:auto}
+  /* columns size to their content and only wrap between words: numbers and names never split */
+  .plan .tbl th,.plan .tbl td{text-align:left;padding:5px 4px}
   .plan .tbl{font-size:12px}
+  .plan .tbl .chip{white-space:normal;padding:2px 6px}
 }
+@media (max-width:360px){.plan{padding:8px}.plan .tbl{font-size:11px}.plan .tbl th,.plan .tbl td{padding:4px 2px}.plan .tbl .chip{font-size:11px;padding:2px 5px}}
 .sbar{display:none}
 @media (max-width:900px){
   .sbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:5;align-items:center;justify-content:space-between;gap:10px;
@@ -505,6 +507,10 @@ es:{
  pn_top:"Por encima de 860 todavía no tenemos confirmados los hitos del Pacto Astral.", pn_use:"Usar {n} como meta",
  pact_got:"<b>Pacto Astral:</b> tu último premio sería {p}.", pact_none:"<b>Pacto Astral:</b> aún no llegas al primer premio, {p}.",
  pact_next:"El próximo es {p}: te faltan {d}.", pact_extra:"Las {x} estrellas de más no se pierden: se guardan en el Pacto para el próximo.", pact_top:"Por encima de 860 todavía no tenemos confirmados los hitos.",
+ later_h:"¿Gastar hoy o guardar para la T{n}?", later_txt:"Gastando hoy lo de la tabla ganas <b>{x}</b> estrellas al cerrar esta temporada. Si en cambio guardas esos mismos materiales, en la T{n} valdrían como máximo unas <b>{y}</b> estrellas, que llegan al cerrar la T{n}.",
+ later_save:"Guardar te da más estrellas, pero más tarde: el premio del Pacto también se atrasa una temporada y no tienes ese poder lo que queda de esta.",
+ later_spend:"Gastar hoy te conviene: guardar no te daría más estrellas.", later_even:"Da casi lo mismo: decide si prefieres las estrellas (y el poder) ahora o más tarde.",
+ later_note:"Al cerrar la temporada, los niveles por encima de {f} se borran y lo gastado en ellos no vuelve; los materiales y las entradas de Reinos que no gastes sí pasan a la siguiente temporada (confirmado por jugadores), y las entradas dan más material allá. El cálculo de la T{n} supone que con lo que consigas allá llegas al Lv{g} y que estos materiales se usan de ahí para arriba: es el mejor caso.",
  pact_h:"Ver todos los hitos del Pacto Astral", pact_intro:"Al cerrar la temporada tus Estrellas Primarias se suman en el Pacto Astral, y cada hito te da un premio para las temporadas siguientes. Se acumulan de una temporada a otra: lo que sobra cuenta para el próximo hito. ✓ = lo alcanzas con el número grande del panel ({n}).",
  pact_stars:"Estrellas", pact_reward:"Premio", pact_next_tag:"Próximo", pact_unconf:"Hitos por encima de 860: sin confirmar.",
  rank_line:"Clasificación: tu Valoración de Progreso al cierre sería {s} (+{d} frente a no subir nada).",
@@ -679,6 +685,10 @@ en:{
  pn_top:"Astral Pact milestones above 860 aren't confirmed yet.", pn_use:"Use {n} as the goal",
  pact_got:"<b>Astral Pact:</b> your last reward would be {p}.", pact_none:"<b>Astral Pact:</b> you don't reach the first reward yet, {p}.",
  pact_next:"The next one is {p}: {d} to go.", pact_extra:"The {x} extra stars aren't lost: they stay in the Pact for the next one.", pact_top:"Milestones above 860 aren't confirmed yet.",
+ later_h:"Spend today or keep for S{n}?", later_txt:"Spending what's in the table today gets you <b>{x}</b> stars when this season ends. If you keep those same materials instead, in S{n} they'd be worth at most about <b>{y}</b> stars, which arrive when S{n} ends.",
+ later_save:"Keeping gives you more stars, but later: the Pact reward is delayed a season too, and you don't get that power for the rest of this one.",
+ later_spend:"Spending today is better: keeping wouldn't give you more stars.", later_even:"It's about the same: decide whether you want the stars (and the power) now or later.",
+ later_note:"When the season ends, levels above {f} are wiped and what you spent on them doesn't come back; materials and Realm entries you don't spend do carry over to the next season (confirmed by players), and entries give more material there. The S{n} estimate assumes what you farm there takes you to Lv{g} and these materials are spent from there up: it's the best case.",
  pact_h:"See every Astral Pact milestone", pact_intro:"When the season ends your Primo Stars add up in the Astral Pact, and each milestone gives you a reward for the following seasons. They carry over from one season to the next: whatever is left counts toward the next milestone. ✓ = you reach it with the panel's big number ({n}).",
  pact_stars:"Stars", pact_reward:"Reward", pact_next_tag:"Next", pact_unconf:"Milestones above 860: not confirmed.",
  rank_line:"Leaderboard: your Progress Rating at the end would be {s} (+{d} over raising nothing).",
@@ -967,6 +977,16 @@ function seasonEnd(now,h,m){
 }
 
 // ---------- step costs ----------
+// At each rollover every level above the season's floor is wiped and the spent materials are gone; leftover materials stay
+// (confirmed by players: S2 starts at Lv100 and you climb 100→130 again for no points). Those levels are bought again at the
+// price of the season that introduced them (estimated: the game's tables for each season start at its own floor).
+const seasonOf=(s,L,f="floor")=>{let q=s;while(q>1&&L<=RULES[q][f])q--;return q};
+const MAT_KEY={skill:"essence",fant:"treats",relic:"sand"};
+function stepOf(key,s,L){const q=seasonOf(s,L,key==="relic"?"relicBase":"floor"),R=RULES[q];
+ return {R,c:key==="gear"?gearStep(R,L):key==="skill"?skillStep(R,q,L):key==="fant"?fantStep(R,q,L):relicStep(R,q,L)}}
+// adds the cost of reaching level L to `to`; false when the cost isn't known
+function addStep(to,key,s,L){const {R,c}=stepOf(key,s,L);if(c===null)return false;
+ if(key==="gear"){to.ore+=c;to.rola+=c*2;if((L-R.floor)%5===0&&L>R.floor)to.forge+=R.forgeStone||0}else to[MAT_KEY[key]]+=c;return true}
 function gearStep(R,L){const b=L-R.floor;if(b<1)return 0;if(b>300||R.gearBase===undefined)return null;return Math.round((R.gearBase+(Math.min(b,150)-1)*R.gearRate)/5)*5}
 function skillStep(R,s,L){const b=L-R.floor;if(b<1)return 0;if(b>(s<=2?150:180)||R.skillBase===undefined)return null;return Math.round((R.skillBase+(b-1)*R.skillRate)/5)*5}
 function fantStep(R,s,L){const b=L-R.floor;if(b<1)return 0;const x=FANTXP[s]?.[b-1];return x>0?x:null}
@@ -1008,11 +1028,11 @@ function calc(){
  const table=CHARXP[s];let lv=n("charLv")||R.floor,xp=n("charXp"),frac=0;
  if(!table){warns.push(t("w_noxp",{s}))}
  else{
-  if(lv<R.floor){warns.push(t("w_below",{f:R.floor}));lv=R.floor;xp=0}
+  const f1=RULES[1].floor;if(lv<f1){warns.push(t("w_below",{f:f1}));lv=f1;xp=0}
   // EXP waiting in the Bed counts too, unless we're already inside the reserve window (then it's part of the reserve)
   const inReserve=saving&&realH<=Math.min(36,n("saveHours"));
   let pool=xp+xpH*xpHr+(inReserve?0:n("bedXp"));
-  for(let g=0;g<1000;g++){const need=table[lv-R.floor];if(!need){warns.push(t("w_table",{s,l:lv}));pool=0;break}if(pool>=need){pool-=need;lv++}else{frac=pool/need;break}}
+  for(let g=0;g<1000;g++){const q=seasonOf(s,lv+1),need=CHARXP[q]?.[lv-RULES[q].floor];if(!need){warns.push(t("w_table",{s,l:lv}));pool=0;break}if(pool>=need){pool-=need;lv++}else{frac=pool/need;break}}
  }
  const charLv=Math.max(0,lv-R.floor),charPts=lv>=R.floor?charLv*R.charW+Math.floor(frac*R.charW+1e-9):0;
 
@@ -1020,7 +1040,7 @@ function calc(){
  const curs={},sup={},caps=capsAt(s,lv),rows=[],need={ore:0,rola:0,essence:0,sand:0,treats:0,forge:0},unknown={};
  rows.push({k:"char",lv:charLv+frac,w:R.charW,p:charPts});
  for(const g of GROUPS){
-  const fl=R[g.floor],cf=R[g.costFloor],cap=caps[g.key];let lvls=0,capped=false,atCap=cap!==undefined;
+  const fl=R[g.floor],cf=RULES[1][g.costFloor],cap=caps[g.key];let lvls=0,capped=false,atCap=cap!==undefined;
   curs[g.key]=[];
   for(let i=0;i<g.count;i++){
    const cur=has(g.key+"C"+i)?n(g.key+"C"+i):fl;curs[g.key].push(cur);
@@ -1028,14 +1048,7 @@ function calc(){
    if(cap!==undefined&&tar>cap){tar=Math.max(cur,cap);capped=true}
    if(cap!==undefined&&tar<cap)atCap=false;
    lvls+=Math.max(0,tar-fl);
-   for(let L=Math.max(cur,cf)+1;L<=tar;L++){
-    let c;
-    if(g.key==="gear"){c=gearStep(R,L);if(c!==null){need.ore+=c;need.rola+=c*2;if((L-R.floor)%5===0&&L>R.floor)need.forge+=R.forgeStone||0}}
-    else if(g.key==="skill"){c=skillStep(R,s,L);if(c!==null)need.essence+=c}
-    else if(g.key==="fant"){c=fantStep(R,s,L);if(c!==null)need.treats+=c}
-    else{c=relicStep(R,s,L);if(c!==null)need.sand+=c}
-    if(c===null)unknown[g.key]=true;
-   }
+   for(let L=Math.max(cur,cf)+1;L<=tar;L++)if(!addStep(need,g.key,s,L))unknown[g.key]=true;
   }
   if(capped)warns.push(t("w_cap",{g:t(g.key),c:(g.key==="relic"?"+":"Lv")+cap}));
   if(unknown[g.key])warns.push(t("w_cost",{g:t(g.key)}));
@@ -1107,7 +1120,7 @@ function suggestPlan(){
  }
  const opts={};
  for(const g of GROUPS){
-  const cur=c.curs[g.key],fl=R[g.floor],cf=R[g.costFloor],list=[];
+  const cur=c.curs[g.key],fl=R[g.floor],cf=RULES[1][g.costFloor],list=[];
   const cost={ore:0,rola:0,essence:0,sand:0,treats:0,forge:0};
   const lo=Math.min(...cur);
   for(let tg=lo;tg<=limit[g.key];tg++){
@@ -1115,12 +1128,7 @@ function suggestPlan(){
    if(tg>lo){
     for(const cu of cur){
      if(tg<=Math.max(cu,cf))continue;
-     let st;
-     if(g.key==="gear"){st=gearStep(R,tg);if(st!==null){cost.ore+=st;cost.rola+=st*2;if((tg-R.floor)%5===0&&tg>R.floor)cost.forge+=R.forgeStone||0}}
-     else if(g.key==="skill"){st=skillStep(R,s,tg);if(st!==null)cost.essence+=st}
-     else if(g.key==="fant"){st=fantStep(R,s,tg);if(st!==null)cost.treats+=st}
-     else{st=relicStep(R,s,tg);if(st!==null)cost.sand+=st}
-     if(st===null){known=false;break}
+     if(!addStep(cost,g.key,s,tg)){known=false;break}
     }
    }
    if(!known)break;
@@ -1214,6 +1222,15 @@ function altPlan(ch){const old={},pr=el=>el.type==="checkbox"?"checked":"value";
 // Scenario 3: spend only what you have saved today (inventory + saved Realm entries) and keep the rest.
 // No new production, quests, purchases or packs; the character keeps its normal EXP (reserve included).
 // suggestPlan already picks the least material for the most stars, so whatever it doesn't spend is a waste to spend.
+// Stars the same materials would give next season if kept, spent from next season's floor up.
+// ponytail: best case; it assumes next season's own farming already takes you to that floor.
+function laterStars(s,mat){const R=RULES[s+1];if(!R||!R.perStar)return null;let pts=0;
+ for(const g of GROUPS){const left={...mat},keys=g.key==="gear"?["ore","rola"]:[MAT_KEY[g.key]];
+  for(let L=R[g.costFloor]+1;L<R[g.costFloor]+400;L++){const one={ore:0,rola:0,essence:0,sand:0,treats:0,forge:0};
+   let ok=true;for(let i=0;i<g.count&&ok;i++)ok=addStep(one,g.key,s+1,L);if(!ok)break;
+   const f=Math.min(1,...keys.map(m=>one[m]>0?left[m]/one[m]:1));
+   pts+=f*g.count*R[g.w];if(f<1)break;for(const m of keys)left[m]-=one[m]}}
+ return pts/R.perStar}
 function savedScenario(){
  const inv={primoTarget:"",useDaily:false};
  for(const m of MATS)inv["m_"+m+"R"]="";
@@ -1226,10 +1243,14 @@ function savedScenario(){
  const rows=[];// spend from the inventory first, then saved entries
  for(const m of MATS){const own=k.passive[m],nd=p.need[m],sp=Math.min(nd,own);if(own>0||nd>0)rows.push({name:t(m)+(m==="treats"?" (EXP)":""),spend:sp,own,keep:own-sp})}
  if(k.forgeKnown&&(k.forgeHave>0||p.forge>0))rows.push({name:t("forge"),spend:p.forge||0,own:k.forgeHave,keep:Math.max(0,k.forgeHave-(p.forge||0))});
+ // kept Realm entries pay more next season (players confirm unused entries carry over)
+ const nxY=REALM[k.s+1]?.[0],later={...p.need}; // ponytail: next season's lowest Realm tier, the safe guess
  for(const [e,m] of ENTRIES){const own=k.freeEntries[e];if(!own)continue;const y=k.yields?.[IDX[m]];
-  const use=y?Math.min(own,Math.ceil(Math.max(0,p.need[m]-k.passive[m])/y)):0;rows.push({name:t(e),spend:use,own,keep:own-use})}
+  const use=y?Math.min(own,Math.ceil(Math.max(0,p.need[m]-k.passive[m])/y)):0;rows.push({name:t(e),spend:use,own,keep:own-use});
+  if(use&&nxY)later[m]+=use*(nxY[IDX[m]]-y)}
  return {p,ctx:k,score:k.charPts+lvPts,today:td?k.have+Math.floor((td.charPts+lvPts)/R.perStar)+R.fixed:null,rows,
-  raise:GROUPS.some(g=>p.plan[g.key]>Math.min(...k.curs[g.key]))};
+  raise:GROUPS.some(g=>p.plan[g.key]>Math.min(...k.curs[g.key])),
+  gain:p.stars-(k.have+Math.floor(p.base/R.perStar)+R.fixed),later:laterStars(k.s,later)};
 }
 function spendTable(sv,own){const r=sv.rows.filter(x=>x.spend>0||x.keep>0);
  return `<div class="scroll"><table class="tbl"><thead><tr><th>${t("mat")}</th><th>${t("spend")}</th>${own?`<th>${t("own")}</th>`:""}<th>${t("keep")}</th></tr></thead><tbody>${r.map(x=>`<tr><td>${x.name}</td><td>${fmt(x.spend)}</td>${own?`<td>${fmt(x.own)}</td>`:""}<td>${fmt(x.keep)}</td></tr>`).join("")}</tbody></table></div>`}
@@ -1323,7 +1344,11 @@ function renderPlan(){
   html+=hr+head(t("sc3_h"),t("sc3_note",{r:sv&&sv.ctx.saving&&sv.ctx.wantSave?t("pl_now_res"):""}));
   if(sv){
    html+=`<div class="verdict ok"><b>${t("sc3_v",{n:fmt(sv.p.stars)})}</b>${sv.raise&&sv.today!==null?t("sc3_today",{n:fmt(sv.today)}):""}${t("sc3_lv",{lv:sv.ctx.lv})}</div>`+pactLine(sv.p.stars)+rankLine(sv.p);
-   html+=sv.raise?`<p>${t("pl_now_how")}</p>${upTable(sv.p)}<h4>${t("pl_h_spend")}</h4>${spendTable(sv,true)}<p class="small">${t("pl_spend_note")}</p>${useBtn("useNow")}`:`<p>${t("pl_now_none")}</p>`;
+   // spend today or keep the same materials for next season
+   let later="";
+   if(sv.raise&&sv.gain>0&&sv.later!==null){const y=Math.round(sv.later),x=sv.gain,nx=c.s+1;
+    later=`<h4>${t("later_h",{n:nx})}</h4><p>${t("later_txt",{x:fmt(x),y:fmt(y),n:nx})} <b>${t(y>x*1.1?"later_save":y<x*0.95?"later_spend":"later_even")}</b></p><p class="small">${t("later_note",{f:RULES[c.s].floor,g:RULES[nx].floor,n:nx})}</p>`}
+   html+=sv.raise?`<p>${t("pl_now_how")}</p>${upTable(sv.p)}<h4>${t("pl_h_spend")}</h4>${spendTable(sv,true)}<p class="small">${t("pl_spend_note")}</p>${later}${useBtn("useNow")}`:`<p>${t("pl_now_none")}</p>`;
   }
  // monthly pass and 36 h reserve
  const extras=[];

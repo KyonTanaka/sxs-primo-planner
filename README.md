@@ -17,9 +17,16 @@ Calculadora bilingüe (ES/EN) de Estrellas Primarias (Primo Stars) para Sword x 
   - Si el número que pones no es un hito, te avisa y te propone el hito anterior y el siguiente.
   - Cada escenario muestra el último premio que alcanzas y cuánto falta para el próximo.
   - Hay una tabla con todos los hitos.
+- **Gastar hoy vs guardar (v48):** en el escenario 3 compara las estrellas que ganas gastando hoy con las que valdrían esos mismos materiales en la T siguiente (mejor caso, con las entradas de Reinos a su rendimiento de la T siguiente, nivel más bajo).
 - **Clasificación:** cada escenario muestra la Valoración de Progreso al cierre. La Clasificación de Valoración de Temporada suma Jugabilidad + Progreso + Equipamiento, y la calculadora solo mide Progreso.
 
 ## Datos del juego confirmados (con capturas del usuario)
+
+- **Cierre de temporada** (confirmado por jugadores en el Discord oficial, 2026-10-09):
+  - Se borran los niveles de personaje, fantomons, equipamiento y reliquias por encima de 100. Lo gastado en ellos no vuelve.
+  - La T2 empieza en Lv100: hay que subir de 100 a 130 sin ganar puntos.
+  - Los materiales y las herramientas de Reinos que no gastes pasan a la temporada siguiente. Los jugadores recomiendan guardar las herramientas.
+  - En la calculadora, los niveles de 101 a 130 se pagan en la T2 con los costos de la T1 (estimado: las tablas del juego empiezan en el piso de cada temporada).
 
 - **Fórmula T1:** puntos = Σ(niveles por encima de 100 × peso).
   - Pesos: personaje 100, equipamiento 38, reliquia 57 (piso 10), habilidad 13, fantomon 14.
@@ -44,4 +51,4 @@ Calculadora bilingüe (ES/EN) de Estrellas Primarias (Primo Stars) para Sword x 
 - Confirmar los nombres de los objetos en inglés.
 - Confirmar los costos de la T6 en adelante.
 - Confirmar los hitos del Pacto por encima de 860.
-- Decidir entre gastar hoy o guardar para la T2. Hace falta confirmar cuántas estrellas da cada material en la T2.
+- Confirmar que los niveles de 101 a 130 cuestan en la T2 lo mismo que en la T1.
