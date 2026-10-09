@@ -2,9 +2,12 @@
 
 Calculadora bilingüe (ES/EN) de Estrellas Primarias (Primo Stars) para Sword x Staff. Todo vive en un solo archivo: `index.html`.
 
-- **Publicada en:** https://claude.ai/artifact/AziWcNbpUkYWBR2Lvbtnw6 (compartida con «cualquiera con el enlace»).
+- **Enlace para compartir:** https://kyontanaka.github.io/sxs-primo-planner/ (GitHub Pages; abre en cualquier país, sin cuenta).
+- **Copia en Claude:** https://claude.ai/artifact/AziWcNbpUkYWBR2Lvbtnw6. claude.ai no abre en países donde Claude no está disponible, como Venezuela sin VPN.
 - **Probarla en tu PC:** abre `index.html` con doble clic, o sírvela con `python -m http.server 8768` dentro de esta carpeta y entra a http://localhost:8768.
-- **Publicar cambios:** edita `index.html` y pídele a Claude que lo vuelva a publicar en el mismo enlace del Artifact. Si la sesión es nueva, pásale el enlace.
+- **Publicar cambios:**
+  - Haz `git push` a `main` y GitHub Pages se actualiza solo en 1 o 2 minutos.
+  - Para actualizar también la copia en Claude, pídele que la publique de nuevo en el mismo enlace del Artifact.
 
 ## Qué hace
 
