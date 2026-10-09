@@ -511,7 +511,8 @@ es:{
  later_save:"Guardar te da más estrellas, pero más tarde: el premio del Pacto también se atrasa una temporada y no tienes ese poder lo que queda de esta.",
  later_spend:"Gastar hoy te conviene: guardar no te daría más estrellas.", later_even:"Depende de cuánto subas en la T{n}: allá cada nivel cuesta más material, aunque también da más puntos. Como da parecido, decide si prefieres las estrellas (y el poder) ahora o más tarde.",
  later_note:"Al cerrar la temporada, los niveles por encima de {f} se borran y lo gastado en ellos no vuelve; los materiales y las entradas de Reinos que no gastes sí pasan a la siguiente temporada (confirmado por jugadores), y las entradas dan más material allá. El número más alto supone que usas estos materiales apenas pases el Lv{g} en la T{n}, donde los niveles son más baratos; el más bajo, que en la T{n} subes lo mismo que en esta y los usas al final, donde cada nivel cuesta más.",
- pact_h:"Ver todos los hitos del Pacto Astral", pact_intro:"Al cerrar la temporada tus Estrellas Primarias se suman en el Pacto Astral, y cada hito te da un premio para las temporadas siguientes. Se acumulan de una temporada a otra: lo que sobra cuenta para el próximo hito. ✓ = lo alcanzas con el número grande del panel ({n}).",
+ gear_tip:"<b>Antes del cierre, equipa tu mejor equipamiento.</b> El que tengas puesto al terminar la temporada define tu Valoración de Equipamiento, que te da bonificaciones permanentes (FAQ oficial del juego).",
+ pact_h:"Ver todos los hitos del Pacto Astral", pact_intro:"Al cerrar la temporada tus Estrellas Primarias se suman en el Pacto Astral, y cada hito te da un premio permanente. Se acumulan de una temporada a otra: lo que sobra cuenta para el próximo hito. ✓ = lo alcanzas con el número grande del panel ({n}).",
  pact_stars:"Estrellas", pact_reward:"Premio", pact_next_tag:"Próximo", pact_unconf:"Hitos por encima de 860: sin confirmar.",
  rank_line:"Clasificación: tu Valoración de Progreso al cierre sería {s} (+{d} frente a no subir nada).",
  i_time:"Cuánto tiempo te queda. Todo lo demás (EXP, materiales, entradas) se multiplica por este tiempo.",
@@ -689,7 +690,8 @@ en:{
  later_save:"Keeping gives you more stars, but later: the Pact reward is delayed a season too, and you don't get that power for the rest of this one.",
  later_spend:"Spending today is better: keeping wouldn't give you more stars.", later_even:"It depends on how far you get in S{n}: each level there costs more material, but it also scores more. Since it comes out similar, decide whether you want the stars (and the power) now or later.",
  later_note:"When the season ends, levels above {f} are wiped and what you spent on them doesn't come back; materials and Realm entries you don't spend do carry over to the next season (confirmed by players), and entries give more material there. The higher number assumes you use these materials right after passing Lv{g} in S{n}, where levels are cheaper; the lower one, that in S{n} you climb as far as this season and use them at the end, where each level costs more.",
- pact_h:"See every Astral Pact milestone", pact_intro:"When the season ends your Primo Stars add up in the Astral Pact, and each milestone gives you a reward for the following seasons. They carry over from one season to the next: whatever is left counts toward the next milestone. ✓ = you reach it with the panel's big number ({n}).",
+ gear_tip:"<b>Before the season ends, equip your best gear.</b> Whatever you have equipped when it ends sets your Gear Rating, which gives you permanent stat bonuses (official game FAQ).",
+ pact_h:"See every Astral Pact milestone", pact_intro:"When the season ends your Primo Stars add up in the Astral Pact, and each milestone gives you a permanent reward. They carry over from one season to the next: whatever is left counts toward the next milestone. ✓ = you reach it with the panel's big number ({n}).",
  pact_stars:"Stars", pact_reward:"Reward", pact_next_tag:"Next", pact_unconf:"Milestones above 860: not confirmed.",
  rank_line:"Leaderboard: your Progress Rating at the end would be {s} (+{d} over raising nothing).",
  i_time:"How much time you have left. Everything else (EXP, materials, entries) is multiplied by this time.",
@@ -1359,7 +1361,7 @@ function renderPlan(){
   extras.push(`<h4>${t("res_head")}</h4><p>${t(key,{n:fmt(diff),s:fmt(saveOn?maxOther.stars:maxNow.stars)})}</p>`);
  }
  if(extras.length)html+=hr+extras.join("");
- html+=capsTxt;
+ html+=`<p class="stepstat ok">${t("gear_tip")}</p>`+capsTxt;
  box.innerHTML=html;
  const load=(id,plan)=>{const btn=$(id);if(!btn)return;btn.addEventListener("click",()=>{
   for(const g of GROUPS){const tg=plan[g.key];$(g.key+"AllP").value=tg;for(let i=0;i<g.count;i++){const cu=has(g.key+"C"+i)?n(g.key+"C"+i):0;$(g.key+"P"+i).value=Math.max(cu,tg)}}

@@ -26,6 +26,11 @@ Calculadora bilingüe (ES/EN) de Estrellas Primarias (Primo Stars) para Sword x 
   - Se borran los niveles de personaje, fantomons, equipamiento y reliquias por encima de 100. Lo gastado en ellos no vuelve.
   - La T2 empieza en Lv100: hay que subir de 100 a 130 sin ganar puntos.
   - Los materiales y las herramientas de Reinos que no gastes pasan a la temporada siguiente. Los jugadores recomiendan guardar las herramientas.
+  - FAQ oficial del juego (Discord, «Upcoming Season FAQ», Rex):
+    - Los niveles normales se conservan; los de temporada se convierten en Estrellas Primarias según la Valoración de Progreso.
+    - Los bonos del Pacto Astral son permanentes.
+    - El equipamiento que tengas puesto al cierre define la Valoración de Equipamiento, que da bonificaciones permanentes.
+    - Tope de la T2: 130.
   - En la calculadora, los niveles de 101 a 130 se pagan en la T2 con los costos de la T1 (estimado: las tablas del juego empiezan en el piso de cada temporada).
 
 - **Fórmula T1:** puntos = Σ(niveles por encima de 100 × peso).
