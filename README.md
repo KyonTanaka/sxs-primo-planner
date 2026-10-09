@@ -17,7 +17,7 @@ Calculadora bilingüe (ES/EN) de Estrellas Primarias (Primo Stars) para Sword x 
   - Si el número que pones no es un hito, te avisa y te propone el hito anterior y el siguiente.
   - Cada escenario muestra el último premio que alcanzas y cuánto falta para el próximo.
   - Hay una tabla con todos los hitos.
-- **Gastar hoy vs guardar (v48):** en el escenario 3 compara las estrellas que ganas gastando hoy con las que valdrían esos mismos materiales en la T siguiente (mejor caso, con las entradas de Reinos a su rendimiento de la T siguiente, nivel más bajo).
+- **Gastar hoy vs guardar (v48):** en el escenario 3 compara las estrellas que ganas gastando hoy con las que valdrían esos mismos materiales en la T siguiente como un rango: el más alto usa los materiales apenas pasas el piso de la T siguiente; el más bajo, al final, si subes lo mismo que en esta temporada (allá cada nivel cuesta más pero también da más puntos). Las entradas de Reinos cuentan con su rendimiento de la T siguiente, nivel más bajo.
 - **Clasificación:** cada escenario muestra la Valoración de Progreso al cierre. La Clasificación de Valoración de Temporada suma Jugabilidad + Progreso + Equipamiento, y la calculadora solo mide Progreso.
 
 ## Datos del juego confirmados (con capturas del usuario)
