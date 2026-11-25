@@ -46,7 +46,7 @@ Calculadora bilingüe (ES/EN) de Estrellas Primarias (Primo Stars) para Sword x 
 - **Carro y Cama:** guardan como máximo 36 h de producción. El Carro da calidad común (gris).
 - **Pacto Astral:**
   - Las estrellas se gastan al cerrar la temporada y se acumulan de una temporada a otra.
-  - Hitos: 5…40 (cada 5), 48…104 (cada 8), 116…200 (cada 12), 215…320 (cada 15), 340…480 (cada 20), 505…680 (cada 25), 710…860 (cada 30). Por encima de 860 no está confirmado.
+  - Hitos: 5…40 (cada 5), 48…104 (cada 8), 116…200 (cada 12), 215…320 (cada 15), 340…480 (cada 20), 505…680 (cada 25), 710…860 (cada 30). De 890 a 1.440 (890, 920 cada 30; 955…1.200 cada 35; 1.240…1.440 cada 40) salen de la guía de Loong Haven de Rezaj (https://www.youtube.com/watch?v=1yvUysq0sg8): sus premios en 680, 800, 860, 920, 1.060, 1.200, 1.360 y 1.440 coinciden con este ciclo. La página los marca con * hasta verlos en el juego.
   - Los premios se repiten en este orden desde el hito 5: ATQ +1%, Mazmorra: Aparición de Equipamiento +3%, DEF +1%, Aparición de Gemas +5%, PS +1%, Mazmorra: Recompensas de Valoración ×2 +2%, VEL +1%, Obtención de EXP +2%.
 
 ## Fuentes
@@ -58,5 +58,5 @@ Calculadora bilingüe (ES/EN) de Estrellas Primarias (Primo Stars) para Sword x 
 - Confirmar los topes de habilidad y fantomon en la T1.
 - Confirmar los nombres de los objetos en inglés.
 - Confirmar los costos de la T6 en adelante.
-- Confirmar los hitos del Pacto por encima de 860.
+- Ver en el juego los hitos del Pacto de 890 a 1.440 (hoy salen de la guía de Rezaj) y conseguir los de más arriba.
 - Confirmar que los niveles de 101 a 130 cuestan en la T2 lo mismo que en la T1.
